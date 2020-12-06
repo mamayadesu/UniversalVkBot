@@ -1,0 +1,16 @@
+{
+    "php_version": "7.4",
+    "app_name": "UniversalVkBot",
+    "app_version": "4.0-pre-release",
+    "app_author": "xRef",
+    "app_description": "",
+    "namespaces": [
+        "VK",
+        "uvb"
+    ],
+    "priorities": [
+        "uvb\\Models\\Attachments\\IAttachment",
+        "uvb\\Events\\EventBase",
+        "uvb\\Plugin\\PluginBase"
+    ]
+}
