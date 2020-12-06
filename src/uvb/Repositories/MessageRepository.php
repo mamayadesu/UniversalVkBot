@@ -458,7 +458,7 @@ class MessageRepository
         }
         if ($keyboard != null && $keyboard->IsKeyboardFilled())
         {
-            $params["keyboard"] = $keyboard->GetKeyboardData();
+            $params["keyboard"] = $keyboard->ConvertToJson();
         }
         try
         {

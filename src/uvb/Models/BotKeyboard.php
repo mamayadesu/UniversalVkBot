@@ -101,8 +101,8 @@ class BotKeyboard
         }
         $buttons = [];
         foreach ($this->buttons as $button)
-        {
-            $buttons[] = $button->GetButtonData();
+        {if(!$button instanceof Button)continue;
+            $buttons[] = [$button->GetButtonData()];
         }
         $arr = array
         (
@@ -122,6 +122,6 @@ class BotKeyboard
     {
         $arr = $this->GetKeyboardData();
 
-        return json_encode($arr);
+        return json_encode($arr, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 }
