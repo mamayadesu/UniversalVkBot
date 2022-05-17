@@ -1,17 +1,10 @@
 {
-    "version": "4.0.1-pre-release",
+    "version": "1.0",
     "versions_history": {
-        "3.9-pre-release": "",
-        "4.0-pre-release": "_4_0_pre_release",
-        "4.0.1-pre-release": "_4_0_1_pre_release"
+        "1.0": "",
     },
     "api_versions": [
-        "7.0-pre-release-0.1",
-        "7.0-pre-release-0.2",
-        "7.0-pre-release-0.3",
-        "7.0-pre-release-0.4",
-        "7.0-pre-release-1.0",
-        "7.0-pre-release-1.0.1"
+        "1.0"
     ],
     "php_version": "7.4",
     "url": "https://github.com/mamayadesu/UniversalVkBot/raw/main/update/4.0.1-pre-release/UniversalVkBot.phar"
