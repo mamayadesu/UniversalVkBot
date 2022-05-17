@@ -15,9 +15,7 @@ use \Exception;
 
 final class UserCache
 {
-    private array $cached = array();
-    private array $cachedTime = array();
-    private array $cacheUpdated = array();
+    private array $cached = array(), $cachedTime = array(), $cacheUpdated = array();
     private static ?UserCache $instance = null;
     private Main $main;
     const USER_CACHE_TIME = 432000; // срок хранения кэша пользователей 5 дней
@@ -124,6 +122,9 @@ final class UserCache
         \hat();
     }
 
+    /**
+     * ToDo Сделать команду, выполняющая этот метод
+     */
     public function Clear() : void
     {
         \hat();
@@ -174,7 +175,7 @@ final class UserCache
         }
     }
 
-    public function Save(bool $outputProgress = false) : void
+    public function Save(bool $outputProgress = false, bool $freeRam = false) : void
     {
         \hat();
         $path = $this->CheckDir();
@@ -202,11 +203,7 @@ final class UserCache
         }
         \hat();
         foreach ($this->cached as $vkId => $user)
-        {
-            if (!$user instanceof User)
-            {
-                continue;
-            }
+        {if(!$user instanceof User)continue;
             if (!$this->cacheUpdated[$vkId])
             {
                 continue;
@@ -226,6 +223,12 @@ final class UserCache
             $f = fopen($path . $vkId . ".json", "w");
             fwrite($f, json_encode($data, JSON_PRETTY_PRINT));
             fclose($f);
+
+            if ($freeRam)
+            {
+                unset($this->cached[$vkId], $this->cachedTime[$vkId], $this->cacheUpdated[$vkId], $user);
+            }
+
             $done++;
             $currentPercent = floor($done / $count * 100);
             if ($currentPercent != $currentPercentWas)

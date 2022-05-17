@@ -256,7 +256,7 @@ final class Geolocation
     /**
      * Рассчитывает дистанцию между двумя геолокациями
      *
-     * @param Geolocation $anotherGeolocation другая геометка
+     * @param Geolocation $anotherGeolocation геометка, с которой нужно рассчитать дистанцию
      * @return float Расстояние между двумя геометками в метрах
      */
     public function Distance(Geolocation $anotherGeolocation) : float

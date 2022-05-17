@@ -23,11 +23,6 @@ class BotKeyboard
      */
     private array $buttons = [];
 
-    public function __construct()
-    {
-
-    }
-
     /**
      * Включить или отключить опцию скрытия клавиатуры после нажатия на кнопку
      *
@@ -104,13 +99,12 @@ class BotKeyboard
         {if(!$button instanceof Button)continue;
             $buttons[] = [$button->GetButtonData()];
         }
-        $arr = array
+        return array
         (
             "one_time" => $this->oneTime,
             "buttons" => $buttons,
             "inline" => $this->inline
         );
-        return $arr;
     }
 
     /**
