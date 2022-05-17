@@ -4,7 +4,7 @@ namespace uvb;
 
 use Application\Application;
 
-class ConversationIds
+final class ConversationIds
 {
     private array $convids = array();
     private string $path;

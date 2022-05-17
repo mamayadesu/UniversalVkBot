@@ -7,7 +7,7 @@ namespace uvb\Events;
  * @package uvb\Events
  */
 
-class UnregisteredVkEvent extends EventBase
+class UnregisteredVkEvent extends Event
 {
     /**
      * @ignore

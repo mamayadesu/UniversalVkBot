@@ -2,23 +2,24 @@
 
 namespace uvb;
 
-use IO\Console;
+use Application\Application;
 use uvb\Events\CommandPreProcessEvent;
 use uvb\Models\Command;
 use uvb\Models\User;
 use uvb\Plugin\CommandManager;
 use uvb\Plugin\PluginManager;
 use uvb\Protection\AddressBlocker;
-use uvb\Repositories\UserRepository;
+use uvb\Services\RamController;
 use uvb\Services\UserCache;
-use uvb\System\ExitCode;
+use uvb\Utils\CpuUsage;
+use VK\Client\VKApiClient;
 
 /**
  * Класс, предоставляющий API ядра для работы с ботом
  * @package uvb
  */
 
-class Bot
+final class Bot
 {
     /**
      * @ignore
@@ -53,6 +54,21 @@ class Bot
     /**
      * @ignore
      */
+    private string $confirmResponse = "";
+
+    /**
+     * @ignore
+     */
+    private float $cpu = 0;
+
+    /**
+     * @ignore
+     */
+    private float $lastCpuChecked = 0;
+
+    /**
+     * @ignore
+     */
     public function __construct(Main $main, Logger $logger, Logger $clogger, SystemLogger $sl)
     {
         if (self::$instance != null)
@@ -69,13 +85,47 @@ class Bot
     }
 
     /**
+     * @return float Процент использования CPU. Работает только Linux-системах. Для Windows этот метод всегда возвращает ноль.
+     */
+    public function GetCpuUsage() : float
+    {
+        return CpuUsage::GetValue();
+    }
+
+    public function GetRamController() : RamController
+    {
+        return $this->main->ramController;
+    }
+
+    /**
      * Доступ к системным функциям бота
      *
      * @return Bot
      */
-    public static function GetInstance() : Bot
+    public static function GetInstance() : ?Bot
     {
         return self::$instance;
+    }
+
+    /**
+     * Устанавливает код подтверждения Callback API
+     *
+     * @param string $text
+     * @return void
+     */
+    public function SetConfirmResponse(string $text) : void
+    {
+        $this->confirmResponse = $text;
+    }
+
+    /**
+     * Возвращает установленный код подтверждения Callback API
+     *
+     * @return string
+     */
+    public function GetConfirmResponse() : string
+    {
+        return $this->confirmResponse;
     }
 
     /**
@@ -96,7 +146,7 @@ class Bot
      */
     public function GetUser(int $vkId) : User
     {
-        return UserRepository::Get($vkId);
+        return User::Get($vkId);
     }
 
     /**
@@ -107,7 +157,7 @@ class Bot
      */
     public function GetUsers(array $vkIds) : array
     {
-        return UserRepository::GetUsers($vkIds);
+        return User::GetUsers($vkIds);
     }
 
     /**
@@ -115,7 +165,7 @@ class Bot
      *
      * @return PluginManager Менеджер плагинов
      */
-    public function GetPluginManager() : PluginManager
+    public function GetPluginManager() : ?PluginManager
     {
         return $this->main->pluginManager;
     }
@@ -159,6 +209,14 @@ class Bot
     }
 
     /**
+     * @return VKApiClient
+     */
+    public static function GetVkApi() : VKApiClient
+    {
+        return self::$instance->main->api;
+    }
+
+    /**
      * Выполняет команду от лица какого-либо пользователя или консоли
      *
      * @param User $user Пользователей, от лица которого будет выполнена команда
@@ -198,7 +256,10 @@ class Bot
      */
     public function Shutdown() : void
     {
-        $this->main->exitCode->Set(0);
+        if ($this->main->sga->Get(["exitCode"]) != 255)
+        {
+            $this->main->sga->Set(["exitCode"], 0);
+        }
         $this->ProcStopper();
     }
 
@@ -207,7 +268,7 @@ class Bot
      */
     public function Reboot() : void
     {
-        $this->main->exitCode->Set(2);
+        $this->main->sga->Set(["exitCode"], 2);
         $this->ProcStopper();
     }
 
@@ -221,10 +282,13 @@ class Bot
             return;
         }
 
-        $this->main->exitCode->Set(3);
+        $this->main->sga->Set(["exitCode"], 3);
         $this->ProcStopper();
     }
 
+    /**
+     * @ignore
+     */
     private function ProcStopper() : void
     {
         if ($this->isShuttingDown)
@@ -232,7 +296,7 @@ class Bot
             return;
         }
         $this->isShuttingDown = true;
-        $exitCode = $this->main->exitCode->Get();
+        $exitCode = $this->main->sga->Get(["exitCode"]);
         if ($exitCode == 0)
         {
             cmm::l("bot.shuttingdown");
@@ -245,30 +309,72 @@ class Bot
         {
             cmm::l("bot.updating");
         }
-        cmm::l("bot.pluginsshuttingdown");
-        $name = "";
-        $this->main->UpdateTitle();
-        while (count($this->GetPluginManager()->GetPlugins()) > 0)
-        {
-            foreach ($this->GetPluginManager()->GetPlugins() as $key => $value)
-            {
-                $name = $key;
-                break;
-            }
-            $this->main->UpdateTitle();
-            $this->GetPluginManager()->UnloadPlugin($name); $this->main->UpdateTitle();
-        }
-        cmm::l("bot.savingconvids");
-        $cids = ConversationIdsResource::$conversationIds;
-        $cids->Save();
+        $pluginManager = $this->GetPluginManager();
 
-        cmm::l("bot.savingusers");
-        $userCache = UserCache::GetInstance(); $this->main->UpdateTitle();
-        $userCache->Save(true); $this->main->UpdateTitle();
+        if ($pluginManager != null)
+        {
+            cmm::l("bot.pluginsshuttingdown");
+            $name = "";
+            \hat();
+            while (count($pluginManager->GetPlugins()) > 0)
+            {
+                foreach ($pluginManager->GetPlugins() as $key => $value)
+                {
+                    $name = $key;
+                    break;
+                }
+                \hat();
+                $pluginManager->UnloadPlugin($name); \hat();
+            }
+        }
+        $cids = ConversationIdsResource::$conversationIds;
+        if ($cids != null)
+        {
+            cmm::l("bot.savingconvids");
+            $cids->Save();
+        }
+
+        $userCache = UserCache::GetInstance(); \hat();
+        if ($userCache != null)
+        {
+            cmm::l("bot.savingusers");
+            $userCache->Save(true); \hat();
+        }
 
         $this->main->KillThreads();
         // это делать в последнюю очередь
-        cmm::l("bot.stoppingswoole");
-        $this->main->server->shutdown(); $this->main->UpdateTitle();
+
+        if ($this->main->server != null)
+        {
+            cmm::l("bot.stoppinghttp");
+            $this->main->server->Shutdown(); \hat();
+            if ($exitCode == 3)
+            {
+                $exitCode = 2;
+                $this->main->InstallUpdate();
+            }
+            if ($exitCode == 2)
+            {
+                sleep(3);
+            }
+        }
+        else
+        {
+            exit(0);
+        }
+    }
+
+    /**
+     * Выполняет асинхронные задачи.
+     * Пожалуйста, запускайте этот метод с интервалом хотя бы раз в 0.5 — 2 секунды в коде своего плагина, выполнение которого занимает продолжительное время (например, циклы с обработкой больших данных), чтобы асинхронные задачи продолжали выполняться
+     *
+     * @return void
+     */
+    public function HandleAsyncTasksWhenProcessIsBusy() : void
+    {
+        $this->main->UpdateTitle();
+        if ($this->main->schedulerMaster == null)
+            return;
+        $this->main->schedulerMaster->Handle();
     }
 }

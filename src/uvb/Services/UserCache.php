@@ -7,29 +7,27 @@ use IO\FileDirectory;
 use uvb\cmm;
 use uvb\Main;
 use uvb\Models\User;
-use uvb\Models\UserSex;
-use uvb\Repositories\UserRepository;
 use \Exception;
 
 /**
  * @ignore
  */
 
-class UserCache
+final class UserCache
 {
     private array $cached = array();
     private array $cachedTime = array();
     private array $cacheUpdated = array();
     private static ?UserCache $instance = null;
     private Main $main;
-    const USER_CACHE_TIME = 86400;
+    const USER_CACHE_TIME = 432000; // срок хранения кэша пользователей 5 дней
 
     public function __construct(Main $main)
     {
         $this->main = $main;
         if (self::$instance != null)
         {
-            throw new Exception("UserCache service already started!");
+            throw new Exception("UserCache service is already started!");
         }
         self::$instance = $this;
     }
@@ -56,7 +54,10 @@ class UserCache
 
     public function Load(bool $outputProgress = false) : void
     {
-        $this->main->UpdateTitle();
+        \hat();
+        $this->cached = array();
+        $this->cachedTime = array();
+        $this->cacheUpdated = array();
         $path = $this->CheckDir();
         $content = "";
         $data = array();
@@ -68,7 +69,7 @@ class UserCache
         $count = count(glob($path . "*.json"));
         $done = 0;
 
-        $this->main->UpdateTitle();
+        \hat();
         $currentPercentWas = 0;
         $currentPercent = 0;
         if ($outputProgress)
@@ -76,63 +77,38 @@ class UserCache
             cmm::l("bot.loadingusers.progress", [$currentPercent]);
         }
         $updater = 0;
-        foreach (glob($path . "*.json") as $fullname)
+        foreach (glob($path . "*.json") as $filename)
         {
             $updater++;
-            $basename = basename($fullname);
+            $basename = basename($filename);
             $vkIdStr = substr($basename, 0, strlen($basename) - 5);
             $vkIdStr = str_replace([",", "."], ["", ""], $vkIdStr);
-            $content = file_get_contents($fullname);
+            $content = file_get_contents($filename);
             $data = json_decode($content, true);
             $vkId = intval($vkIdStr);
-            if ($data == null || $vkId == 0 || !isset($data["firstname"]) || !isset($data["lastname"]) || !isset($data["updated"]) || !(is_string($data["firstname"]) || is_array($data["firstname"]) || is_string($data["lastname"]) || is_array($data["lastname"])))
+            if ($data == null || $vkId == 0 || !isset($data["updated"]) || !is_integer($data["updated"]) ||
+                !isset($data["firstname"]) || !is_array($data["firstname"]) || !isset($data["firstname"]["nom"]) || !is_string($data["firstname"]["nom"]) ||
+                !isset($data["lastname"]) || !is_array($data["lastname"]) || !isset($data["lastname"]["nom"]) || !is_string($data["lastname"]["nom"]) ||
+                !isset($data["sex"]) || !is_integer($data["sex"]) ||
+                !isset($data["birthday"]) || !is_string($data["birthday"]) ||
+                !isset($data["city"]) || !is_string($data["city"]) ||
+                !isset($data["country"]) || !is_string($data["country"]) ||
+                !isset($data["domain"]) || !is_string($data["domain"]) ||
+                !isset($data["status"]) || !is_string($data["status"])
+            )
             {
-                FileDirectory::Delete($fullname); $this->main->UpdateTitle();
+                \hat();
+                FileDirectory::Delete($filename);
                 continue;
             }
-            $sex = UserSex::MALE;
-            $constructor = 0;
-            if (isset($data["sex"]) && ($data["sex"] == UserSex::MALE || $data["sex"] == UserSex::FEMALE))
-            {
-                $sex = $data["sex"];
-            }
-            else if (isset($data["sex"]))
-            {
-                FileDirectory::Delete($fullname);
-                continue;
-            }
-            if (is_array($data["firstname"]) && is_array($data["lastname"]) && isset($data["sex"]))
-            {
-                $constructor = 1;
-            }
-            if (is_string($data["firstname"]) && is_string($data["lastname"]) && !isset($data["sex"]))
-            {
-                $constructor = 2;
-            }
-            if ($constructor == 0)
-            {
-                FileDirectory::Delete($fullname);
-                continue;
-            }
-            $user = null;
-            $data["updated"] = intval($data["updated"]);
-
-            switch ($constructor)
-            {
-                default:
-                    $user = new User($vkId, $data["firstname"], $data["lastname"], $data["sex"]);
-                    break;
-
-                case 2:
-                    $user = new User($vkId, $data["firstname"], $data["lastname"]);
-            }
+            $user = new User($vkId, $data["firstname"], $data["lastname"], $data["sex"], $data["birthday"], $data["city"], $data["country"], $data["domain"], $data["status"]);
             $this->cached[$vkId] = $user;
             $this->cachedTime[$vkId] = $data["updated"];
             $this->cacheUpdated[$vkId] = false;
             if ($updater == 100)
             {
                 $updater = 0;
-                $this->main->UpdateTitle();
+                \hat();
             }
             $done++;
             $currentPercent = floor($done / $count * 100);
@@ -145,18 +121,67 @@ class UserCache
                 }
             }
         }
-        $this->main->UpdateTitle();
+        \hat();
     }
 
-    public function Save(bool $outputProgress = false) : void
+    public function Clear() : void
     {
-        $this->main->UpdateTitle();
+        \hat();
+        $outputProgress = true;
         $path = $this->CheckDir();
         $data = array();
         $f = null;
         $count = 0;
         $done = 0;
-        $this->main->UpdateTitle();
+        foreach ($this->cached as $vkId => $user)
+        {if (!$user instanceof User)continue;
+            if (!$this->cacheUpdated[$vkId])
+            {
+                continue;
+            }
+            $count++;
+        }
+        $currentPercentWas = 0;
+        $currentPercent = 0;
+        if ($outputProgress)
+        {
+            $this->main->bot->GetLogger()->Log($currentPercent);
+        }
+        \hat();
+        foreach ($this->cached as $vkId => $user)
+        {if (!$user instanceof User)continue;
+            if (!$this->cacheUpdated[$vkId])
+            {
+                continue;
+            }
+            unset($user);
+            unset($this->cached[$vkId]);
+
+            unset($this->cachedTime[$vkId]);
+            unset($this->cacheUpdated[$vkId]);
+            @unlink($path . $vkId . ".json");
+            $done++;
+            $currentPercent = floor($done / $count * 100);
+            if ($currentPercent != $currentPercentWas)
+            {
+                $currentPercentWas = $currentPercent;
+                if ($outputProgress)
+                {
+                    $this->main->bot->GetLogger()->Log($currentPercent);
+                }
+            }
+            \hat();
+        }
+    }
+
+    public function Save(bool $outputProgress = false) : void
+    {
+        \hat();
+        $path = $this->CheckDir();
+        $data = array();
+        $f = null;
+        $count = 0;
+        $done = 0;
         foreach ($this->cached as $vkId => $user)
         {
             if (!$user instanceof User)
@@ -175,7 +200,7 @@ class UserCache
         {
             cmm::l("bot.savingusers.progress", [$currentPercent]);
         }
-        $this->main->UpdateTitle();
+        \hat();
         foreach ($this->cached as $vkId => $user)
         {
             if (!$user instanceof User)
@@ -191,7 +216,12 @@ class UserCache
                 "firstname" => $user->GetFirstNameAsArray(),
                 "lastname" => $user->GetLastNameAsArray(),
                 "sex" => $user->GetSex(),
-                "updated" => $this->cachedTime[$vkId]
+                "updated" => $this->cachedTime[$vkId],
+                "birthday" => $user->GetBirthday(),
+                "city" => $user->GetCity(),
+                "country" => $user->GetCountry(),
+                "domain" => $user->GetDomain(),
+                "status" => $user->GetStatus()
             );
             $f = fopen($path . $vkId . ".json", "w");
             fwrite($f, json_encode($data, JSON_PRETTY_PRINT));
@@ -206,7 +236,7 @@ class UserCache
                     cmm::l("bot.savingusers.progress", [$currentPercent]);
                 }
             }
-            $this->main->UpdateTitle();
+            \hat();
         }
     }
 
@@ -216,12 +246,6 @@ class UserCache
         {
             return null;
         }
-        /*if ((time() - $this->cachedTime[$vkId]) >= self::USER_CACHE_TIME)
-        {
-            unset($this->cachedTime[$vkId]);
-            unset($this->cached[$vkId]);
-            return null;
-        }*/
         return $this->cached[$vkId];
     }
 
@@ -235,12 +259,6 @@ class UserCache
         $result = array();
         foreach ($this->cached as $vkId => $user)
         {
-            /*if ((time() - $this->cachedTime[$vkId]) >= self::USER_CACHE_TIME)
-            {
-                unset($this->cachedTime[$vkId]);
-                unset($this->cached[$vkId]);
-                continue;
-            }*/
             $result[$vkId] = $user;
         }
         return $result;
@@ -252,21 +270,13 @@ class UserCache
         {
             return false;
         }
-        /*if ((time() - $this->cachedTime[$vkId]) >= self::USER_CACHE_TIME)
-        {
-            unset($this->cachedTime[$vkId]);
-            unset($this->cached[$vkId]);
-            return false;
-        }*/
         return true;
     }
 
     public function Add(User $user) : void
     {
-        $this->main->UpdateTitle();
         if (!$user->IsHuman())
         {
-            $this->main->UpdateTitle();
             return;
         }
         if (!isset($this->cached[$user->GetVkId()]))
@@ -275,6 +285,6 @@ class UserCache
         }
         $this->cachedTime[$user->GetVkId()] = time();
         $this->cacheUpdated[$user->GetVkId()] = true;
-        $this->main->UpdateTitle();
+        \hat();
     }
 }

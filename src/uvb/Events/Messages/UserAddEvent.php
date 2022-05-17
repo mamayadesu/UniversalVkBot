@@ -2,7 +2,7 @@
 
 namespace uvb\Events\Messages;
 
-use uvb\Events\EventBase;
+use uvb\Events\Event;
 use uvb\Models\User;
 
 /**
@@ -10,7 +10,7 @@ use uvb\Models\User;
  * @package uvb\Events\Messages
  */
 
-class UserAddEvent extends EventBase
+class UserAddEvent extends Event
 {
     /**
      * @ignore

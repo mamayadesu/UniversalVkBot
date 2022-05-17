@@ -9,7 +9,7 @@ use uvb\Models\Command;
  * @package uvb\Events
  */
 
-class CommandPreProcessEvent extends EventBase
+class CommandPreProcessEvent extends Event
 {
     /**
      * @ignore

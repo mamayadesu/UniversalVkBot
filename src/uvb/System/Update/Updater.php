@@ -3,14 +3,15 @@
 namespace uvb\System\Update;
 
 use Application\Application;
+use Data\String\BackgroundColors;
+use Data\String\ColoredString;
+use Data\String\ForegroundColors;
 use IO\FileDirectory;
 use uvb\APIVersions;
-use uvb\BackgroundColors;
 use uvb\cmm;
-use uvb\ForegroundColors;
 use uvb\Logger;
 use uvb\Main;
-use uvb\Plugin\PluginBase;
+use uvb\Plugin\Plugin;
 use uvb\SystemLogger;
 
 /**
@@ -112,21 +113,23 @@ final class Updater
     public function Log(string $text) : void
     {
         $dt = $this->dt();
-        $head = $this->GetColoredString($dt, ForegroundColors::CYAN, BackgroundColors::BLACK);
+        $head = ColoredString::Get($dt, ForegroundColors::CYAN, BackgroundColors::BLACK);
         $pr = "[UPDATE]";
-        $head .= $this->GetColoredString($pr, ForegroundColors::PURPLE, BackgroundColors::BLACK);
+        $head .= ColoredString::Get($pr, ForegroundColors::PURPLE, BackgroundColors::BLACK);
+        $not_colored_head = $dt . " " . $pr;
         $text = str_replace("\r", "", $text);
         $lines = explode("\n", $text);
         $output = "";
         $_output = "";
         foreach ($lines as $line)
         {
-            $output .= $head . $this->GetColoredString(" " . $line, ForegroundColors::PURPLE, BackgroundColors::BLACK) . "\n";
-            $_output .= $dt . $pr . " " . $line . "\n";
+            $output .= $head . ColoredString::Get(" " . $line, ForegroundColors::WHITE, BackgroundColors::BLACK) . "\n";
+            $_output .= $not_colored_head . " " . $line . "\n";
         }
-        $output .= ($this->sl->IsColorsEnabled() ? "\033[0m" : "");
-        $_output = preg_replace("/\\033\[([0-9]+)\;([0-9]+)\m/", "", $_output);
-        $_output = str_replace("\033[0m", "", $_output);
+        if (!$this->sl->IsColorsEnabled())
+        {
+            $output = $_output;
+        }
         $this->sl->Log($output, $_output);
     }
 
@@ -162,7 +165,7 @@ final class Updater
 
                 $plugins = $this->main->pluginManager->GetPlugins();
                 foreach ($plugins as $plugin)
-                {if(!$plugin instanceof PluginBase)continue;
+                {if(!$plugin instanceof Plugin)continue;
                     if (!in_array($plugin->GetAPIVersion(), $this->supportedApi))
                     {
                         $pluginsWontWork[] = $plugin->GetPluginName();

@@ -3,22 +3,22 @@
 namespace uvb\Handlers;
 
 use uvb\cmm;
-use uvb\Config;
+use uvb\System\SystemConfig;
 use uvb\ConversationIdsResource;
 use uvb\Main;
 use uvb\Models\Command;
 use uvb\Models\CommandInfo;
 use uvb\Models\User;
 use uvb\Plugin\CommandManager;
-use uvb\Plugin\PluginBase;
+use uvb\Plugin\Plugin;
 use uvb\Plugin\PluginManager;
-use uvb\Repositories\MessageRepository;
+use uvb\Models\Message;
 
 /**
  * @ignore
  */
 
-class SystemCommandsHandler extends PluginBase
+class SystemCommandsHandler extends Plugin
 {
     private bool $commandsRegistered = false;
     private CommandManager $cmdmgr;
@@ -35,7 +35,7 @@ class SystemCommandsHandler extends PluginBase
         $this->plgmgr = $plgmgr;
     }
 
-    public function SetMain(Main $main)
+    public function SetMain(Main $main) : void
     {
         $this->main = $main;
     }
@@ -46,25 +46,30 @@ class SystemCommandsHandler extends PluginBase
         {
             return;
         }
-        $commands = [];
-        $commands[] = new CommandInfo("help", cmm::g("command.commands.private.help"), true, $this);
-        $commands[] = new CommandInfo("stop", cmm::g("command.commands.private.stop"), false, $this);
-        $commands[] = new CommandInfo("restart", cmm::g("command.commands.private.restart"), false, $this);
-        $commands[] = new CommandInfo("update", cmm::g("command.commands.private.update"), false, $this);
-        $commands[] = new CommandInfo("plugins", cmm::g("command.commands.private.plugins"), false, $this);
-        $commands[] = new CommandInfo("statistic", cmm::g("command.commands.private.statistic"), false, $this);
-        $commands[] = new CommandInfo("setlanguage", cmm::g("command.commands.private.setlanguage"), false, $this);
-        $commands[] = new CommandInfo("banip", cmm::g("command.commands.private.banip"), false, $this);
-        $commands[] = new CommandInfo("unbanip", cmm::g("command.commands.private.unbanip"), false, $this);
+        $commands = [
+            new CommandInfo("help", cmm::g("command.commands.private.help"), true, $this),
+            new CommandInfo("stop", cmm::g("command.commands.private.stop"), false, $this),
+            new CommandInfo("restart", cmm::g("command.commands.private.restart"), false, $this),
+            new CommandInfo("update", cmm::g("command.commands.private.update"), false, $this),
+            new CommandInfo("plugins", cmm::g("command.commands.private.plugins"), false, $this),
+            new CommandInfo("status", cmm::g("command.commands.private.status"), false, $this),
+            new CommandInfo("setlanguage", cmm::g("command.commands.private.setlanguage"), false, $this),
+            new CommandInfo("banip", cmm::g("command.commands.private.banip"), false, $this),
+            new CommandInfo("unbanip", cmm::g("command.commands.private.unbanip"), false, $this),
+            new CommandInfo("confirmresponse", cmm::g("command.commands.private.confirmresponse"), false, $this)
+        ];
+
         foreach ($commands as $cmd)
         {
             $this->cmdmgr->RegisterPrivateCommand($cmd);
         }
 
-        $commands = [];
-        $commands[] = new CommandInfo("help", cmm::g("command.commands.conversation.help"), true, $this);
-        $commands[] = new CommandInfo("conversationid", cmm::g("command.commands.conversation.conversationid"), false, $this);
-        $commands[] = new CommandInfo("addconversationid", cmm::g("command.commands.conversation.addconversationid"), false, $this);
+        $commands = [
+            new CommandInfo("help", cmm::g("command.commands.conversation.help"), true, $this),
+            new CommandInfo("conversationid", cmm::g("command.commands.conversation.conversationid"), false, $this),
+            new CommandInfo("addconversationid", cmm::g("command.commands.conversation.addconversationid"), false, $this)
+        ];
+
         foreach ($commands as $cmd)
         {
             $this->cmdmgr->RegisterConversationCommand($cmd);
@@ -148,12 +153,11 @@ class SystemCommandsHandler extends PluginBase
                 {
                     $pluginsName[] = $plugin->GetPluginName();
                 }
-                //$user->Send("Загружено плагинов [" . count($plugins) . "]: " . implode(", ", $pluginsName));
                 $user->Send(cmm::g("main.pluginsloadedcommand", [count($plugins), implode(", ", $pluginsName)]));
                 break;
 
-            case "statistic":
-                $user->Send($this->main->GetStatisticAsString());
+            case "status":
+                $user->Send($this->main->GetStatusAsString());
                 break;
 
             case "setlanguage":
@@ -205,6 +209,21 @@ class SystemCommandsHandler extends PluginBase
                 $ab->Unban($args[0]);
                 $user->Send(cmm::g("command.unbanip.ok"));
                 break;
+
+            case "confirmresponse":
+                if (!isset($args[0]))
+                {
+                    $confirmResponse = $this->main->bot->GetConfirmResponse();
+                    if ($confirmResponse == "")
+                        $user->Send(cmm::g("command.confirmresponse.get.empty"));
+                    else
+                        $user->Send(cmm::g("command.confirmresponse.get", [$confirmResponse]));
+
+                    return;
+                }
+
+                $this->main->bot->SetConfirmResponse($args[0]);
+                $user->Send(cmm::g("command.confirmresponse.set", [$args[0]]));
         }
     }
 
@@ -217,11 +236,10 @@ class SystemCommandsHandler extends PluginBase
         switch ($name)
         {
             case "help":
-                MessageRepository::SendToConversation($this->ConversationOutput($user), $conversationId, []);
+                Message::SendToConversation($this->ConversationOutput($user), $conversationId, []);
                 break;
 
             case "conversationid":
-                //$output = "Идентификатор беседы: " . $conversationId ." или " . ($conversationId - 2000000000) . "\n";
                 $output = cmm::g("command.conversationid", [$conversationId, ($conversationId - 2000000000)]);
                 $cid = $cids->Get($conversationId);
                 if ($cids->Get($conversationId) > 0)

@@ -2,11 +2,15 @@
 
 namespace uvb\Models;
 
+use Exception;
 use uvb\Bot;
 use uvb\cmm;
-use uvb\Config;
-use uvb\Repositories\MessageRepository;
-use uvb\Repositories\UserRepository;
+use uvb\System\SystemConfig;
+use uvb\Main;
+use uvb\Models\Message;
+use uvb\Services\UserCache;
+use VK\Actions\Users;
+use VK\Client\VKApiClient;
 
 /**
  * Class User
@@ -15,123 +19,104 @@ use uvb\Repositories\UserRepository;
  * Данный класс описывает пользователя VK
  */
 
-class User
+final class User implements Entity
 {
+    public const UserFilters = "can_write_private_message,sex,bdate,city,country,domain,status";
     /**
      * @ignore
      */
     private int $VkId, $Sex;
 
     /**
+     * @var array<string, string>
      * @ignore
      */
     private array/*<string, string>*/ $FirstName;
 
     /**
+     * @var array<string, string>
      * @ignore
      */
     private array/*<string, string>*/ $LastName;
 
     /**
+     * @var string
      * @ignore
      */
-    public function __construct(int $VkId, $FirstName, $LastName, $Sex = -1)
-    {
-        if (is_array($FirstName) && is_array($LastName) && ($Sex == 1 || $Sex == 2))
-        {
-            $this->____construct1($VkId, $FirstName, $LastName, $Sex);
-        }
-        else if (is_string($FirstName) && is_string($LastName) && ($Sex != 1 && $Sex != 2))
-        {
-            $this->____construct2($VkId, $FirstName, $LastName);
-        }
-        else
-        {
-            throw new \InvalidArgumentException("Invalid constructor arguments passed. Overloads:\n" .
-                "(int VkId, array<string, string> FirstName, array<string, string> LastName, UserSex Sex)\n" .
-                "(int VkId, string FirstName, string LastName)");
-        }
-    }
+    private string $Birthday, $City, $Country, $Domain, $Status;
 
     /**
      * @ignore
      */
-    private function ____construct1(int $VkId, array/*<string, string>*/ $FirstName, array/*<string, string>*/ $LastName, int $Sex)
+    public function __construct(int $VkId, array $FirstName, array $LastName, int $Sex, string $Birthday, string $City, string $Country, string $Domain, string $Status)
     {
+        $this->CheckCases(true, $FirstName);
+        $this->CheckCases(false, $LastName);
+        if (!UserSex::HasItem($Sex))
+        {
+            throw new Exception("Invalid 'Sex' (" . $Sex . ") given");
+        }
         $this->VkId = $VkId;
-        $this->Sex = $Sex;
         $this->FirstName = $FirstName;
         $this->LastName = $LastName;
-
-        $this->Correct();
+        $this->Birthday = $Birthday;
+        $this->City = $City;
+        $this->Country = $Country;
+        $this->Domain = $Domain;
+        $this->Status = $Status;
+        $this->Sex = $Sex;
     }
+
+
 
     /**
      * @ignore
      */
-    private function ____construct2(int $VkId, string $FirstName, string $LastName)
+    private function CheckCases(bool $firstName, array $a) : void
     {
-        $this->VkId = $VkId;
-        $this->Sex = UserSex::MALE;
-        $this->FirstName = array();
-        $this->FirstName[UserNameCases::NOM] = $FirstName;
-        $this->LastName[UserNameCases::NOM] = $LastName;
-
-        $this->Correct();
+        if (!isset($a["nom"]))
+        {
+            throw new Exception(($firstName ? "'FirstName'" : "'LastName'") . " must contain at least 'nom' case");
+        }
+        $values = UserNameCases::GetValues();
+        foreach ($a as $key => $value)
+        {
+            if (!in_array($key, $values) || !is_string($value))
+            {
+                throw new Exception("Invalid '" . $key . "' in " . ($firstName ? "'FirstName'" : "'LastName'") . " given (" . gettype($value) . ")");
+            }
+        }
     }
 
     /**
      * @ignore
      */
-    public function __updateData(array/*<string, string>*/ $FirstName, array/*<string, string>*/ $LastName, int $Sex) : void
+    public function __updateData(array $FirstName, array $LastName, int $Sex, string $Birthday, string $City, string $Country, string $Domain, string $Status) : void
     {
         if (!$this->IsHuman())
         {
             return;
         }
-        $this->FirstName = $FirstName;
-        $this->LastName = $LastName;
-        $this->Sex = $Sex;
 
-        $this->Correct();
-    }
-
-    /**
-     * @ignore
-     */
-    private function Correct() : void
-    {
-        if ($this->VkId < 1)
+        $this->CheckCases(true, $FirstName);
+        $this->CheckCases(false, $LastName);
+        if (!UserSex::HasItem($Sex))
         {
-            $nameCases = UserRepository::GetNameCases();
-            foreach ($nameCases as $nc)
-            {
-                $this->FirstName[$nc] = $this->FirstName[UserNameCases::NOM];
-                $this->LastName[$nc] = $this->LastName[UserNameCases::NOM];
-            }
+            throw new Exception("Invalid 'Sex' (" . $Sex . ") given");
         }
-        else
+        foreach ($FirstName as $key => $value)
         {
-            $arr1 = array();
-            $arr2 = array();
-            $nameCases = UserRepository::GetNameCases();
-            foreach ($nameCases as $nc)
-            {
-                $arr1[$nc] = "";
-                if (isset($this->FirstName[$nc]))
-                {
-                    $arr1[$nc] = $this->FirstName[$nc];
-                }
-
-                $arr2[$nc] = "";
-                if (isset($this->LastName[$nc]))
-                {
-                    $arr2[$nc] = $this->LastName[$nc];
-                }
-            }
-            $this->FirstName = $arr1;
-            $this->LastName = $arr2;
+            $this->FirstName[$key] = $value;
         }
+        foreach ($LastName as $key => $value)
+        {
+            $this->LastName[$key] = $value;
+        }
+        $this->Birthday = $Birthday;
+        $this->City = $City;
+        $this->Country = $Country;
+        $this->Domain = $Domain;
+        $this->Status = $Status;
     }
 
     /**
@@ -144,14 +129,57 @@ class User
         return $this->VkId;
     }
 
+    public function GetName() : string
+    {
+        return $this->GetFirstName() . " " . $this->GetLastName();
+    }
+
     /**
-     * Получить пол человека
-     *
-     * @return int Возвращает пол человека. 1 - женский. 2 - мужской. Для сравнения рекомендуется использовать UserSex
+     * @return UserSex Пол пользователя.
      */
     public function GetSex() : int
     {
         return $this->Sex;
+    }
+
+    /**
+     * @return string День рождения пользователя. Возвращает в формате <день.месяц.год>. Если год у пользователя не указан, то <день.месяц>. Если дата рождения не указана - пустая строка.
+     */
+    public function GetBirthday() : string
+    {
+        return $this->Birthday;
+    }
+
+    /**
+     * @return string Город, указанный у пользователя
+     */
+    public function GetCity() : string
+    {
+        return $this->City;
+    }
+
+    /**
+     * @return string Страна, указанная у пользователя
+     */
+    public function GetCountry() : string
+    {
+        return $this->Country;
+    }
+
+    /**
+     * @return string Домен пользователя. Может быть "idАЙДИПОЛЬЗОВАТЕЛЯ" либо кастомный домен, если он его задал в настройках
+     */
+    public function GetDomain() : string
+    {
+        return $this->Domain;
+    }
+
+    /**
+     * @return string Статус пользователя
+     */
+    public function GetStatus() : string
+    {
+        return $this->Status;
     }
 
     public function HasUnfilledNameCases() : bool
@@ -160,7 +188,7 @@ class User
         {
             return false;
         }
-        $nameCases = UserRepository::GetNameCases();
+        $nameCases = User::GetNameCases();
         foreach ($nameCases as $nc)
         {
             if (!isset($this->FirstName[$nc]) || $this->FirstName[$nc] == "" || !isset($this->LastName[$nc]) || $this->LastName[$nc] == "")
@@ -176,7 +204,7 @@ class User
      */
     private static function CheckNameCase(string $nameCase) : string
     {
-        $nameCases = UserRepository::GetNameCases();
+        $nameCases = User::GetNameCases();
         if (!in_array($nameCase, $nameCases))
         {
             return UserNameCases::NOM;
@@ -207,7 +235,7 @@ class User
         $nameCase = self::CheckNameCase($nameCase);
         if ($this->HasUnfilledNameCases() && $autoQuery)
         {
-            UserRepository::Get($this->VkId);
+            User::Get($this->VkId);
         }
         else if (!isset($this->FirstName[$nameCase]) && !$autoQuery)
         {
@@ -239,7 +267,7 @@ class User
         $nameCase = self::CheckNameCase($nameCase);
         if ($this->HasUnfilledNameCases() && $autoQuery)
         {
-            UserRepository::Get($this->VkId);
+            User::Get($this->VkId);
         }
         else if (!isset($this->LastName[$nameCase]) && !$autoQuery)
         {
@@ -262,7 +290,7 @@ class User
      * @param string $nameCase Падеж имени
      * @return string Текст упоминания человека
      */
-    public function GetMention($nameCase = "nom") : string
+    public function GetMention(string $nameCase = "nom") : string
     {
         if ($this->GetVkId() == 0 && $this->GetFirstName() == "CONSOLE")
         {
@@ -292,8 +320,9 @@ class User
      * @param string $text Текст сообщения
      * @param array<string> $attachments Список вложений. Вложения указывать в простом формате: <mediatype><owner>_<attachment>_<accesskey>. Например: photo1234_5678
      * @param BotKeyboard|null $keyboard Клавиатура бота. Если не нужно указывать клавиатуру бота, можно просто указать "пустой" экземпляр класса BotKeyboard или указать NULL
+     * @param Geolocation|null $geolocation Геолокация
      */
-    public function SendMessage(string $text, array $attachments, ?BotKeyboard $keyboard) : void
+    public function SendMessage(string $text, array $attachments, ?BotKeyboard $keyboard = null, ?Geolocation $geolocation = null) : void
     {
         $text = str_replace("<user>", $this->GetMention(), $text);
         $text = str_replace("<fulluser>", $this->GetFullMention(), $text);
@@ -306,11 +335,11 @@ class User
             $text);
         try
         {
-            MessageRepository::Send($text, $this, $attachments, $keyboard);
+            Message::Send($text, $this, $attachments, $keyboard, $geolocation);
         }
         catch (\Exception $e)
         {
-            Bot::GetInstance()->GetLogger()->Error("(User::SendMessage) " . cmm::g("user.sendmessage.error", [$this->GetMention(), $e->getMessage()]));
+            Bot::GetInstance()->GetLogger()->Error("(User::SendMessage) " . cmm::g("user.sendmessage.error", [$this->GetMention(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]));
         }
     }
 
@@ -324,13 +353,13 @@ class User
             return true;
         }
 
-        return in_array($this->GetVkId(), Config::Get("admins"));
+        return in_array($this->GetVkId(), SystemConfig::Get("admins"));
     }
 
     /**
      * Отправить сообщение человеку (эквивалент SendMessage(string $text, array<string> $attachments, BotKeyboard $keyboard)
      *
-     * @param string $text Текст сообщения. Замечание: в тексте сообщения можно использовать тэги <user> и <fulluser>. Они будут использоваться как тэги упоминания с имени и тэги упоминания с именем и фамилией соответственно
+     * @param string $text Текст сообщения. Замечание: в тексте сообщения можно использовать теги <user> и <fulluser>. Они будут использоваться как тэги упоминания с имени и тэги упоминания с именем и фамилией соответственно
      */
     public function Send(string $text) : void
     {
@@ -338,11 +367,222 @@ class User
         $text = str_replace("<fulluser>", $this->GetFullMention(), $text);
         try
         {
-            MessageRepository::Send($text, $this, [], new BotKeyboard());
+            Message::Send($text, $this, []);
         }
-        catch (\Exception $e)
+        catch (Exception $e)
         {
-            Bot::GetInstance()->GetLogger()->Log("(User::Send) " . cmm::g("user.sendmessage.error", [$this->GetMention(), $e->getMessage()]));
+            Bot::GetInstance()->GetLogger()->Log("(User::Send) " . cmm::g("user.sendmessage.error", [$this->GetMention(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]));
         }
+    }
+
+    /**
+     * Получить объект пользователя по его идентификатору
+     *
+     * @param int $vkId Идентификатор пользователя
+     * @return User|null Объект пользователя. NULL в случае, если пользователя с таким идентификатор нет
+     */
+    public static function Get(int $vkId) : ?User
+    {
+        $result = self::GetUsers([$vkId]);
+        foreach ($result as $id => $user)
+        {
+            return $user;
+        }
+        return null;
+    }
+
+    /**
+     * Получить объект пользователя "КОНСОЛЬ"
+     *
+     * @return User Консоль как объект пользователя
+     */
+    public static function GetConsoleAsUser() : User
+    {
+        return Main::GetConsoleAsUser();
+    }
+
+    public static function GetNameCases() : array
+    {
+        return ["nom", "gen", "dat", "acc", "ins", "abl"];
+    }
+
+    /**
+     * @ignore
+     */
+    private static function GenerateParams(array $params) : array
+    {
+        $result = [];
+        $c = -1;
+        foreach (self::GetNameCases() as $nameCase)
+        {
+            $c++;
+            $result[$c] = array();
+            foreach ($params as $key => $value)
+            {
+                $result[$c][$key] = $value;
+            }
+            $result[$c]["name_case"] = $nameCase;
+        }
+        return $result;
+    }
+
+    /**
+     * Получить несколько пользователей
+     *
+     * @param array<int> $vkIds2 Список идентификаторов пользователей. В массиве могут находиться только целые числа
+     * @return array<?User> Список пользователей
+     * @throws Exception
+     */
+    public static function GetUsers(array $vkIds2) : array
+    {
+        $userCache = UserCache::GetInstance();
+        $vkIds1 = [];
+        $limit = 0;
+        foreach ($vkIds2 as $id)
+        {
+            if ($limit >= 100)
+            {
+                break;
+            }
+            if (intval($id) < 1)
+            {
+                continue;
+            }
+            $vkIds1[] = intval($id);
+            $limit++;
+        }
+        $ignored = [];
+        $result = [];
+        $userFromUserCache = null;
+        foreach ($vkIds1 as $vkId)
+        {
+            $userFromUserCache = $userCache->Get($vkId);
+            if ($userFromUserCache != null && !$userCache->NeedToUpdate($vkId) && !$userFromUserCache->HasUnfilledNameCases())
+            {
+                $ignored[] = $vkId;
+                $result[$vkId] = $userFromUserCache;
+            }
+        }
+        $vkIds = [];
+        foreach ($vkIds1 as $vkId)
+        {
+            if (in_array($vkId, $ignored))
+            {
+                continue;
+            }
+            $vkIds[] = $vkId;
+        }
+        if (count($vkIds) == 0)
+        {
+            return $result;
+        }
+        $users = self::GetApi();
+        $params = array
+        (
+            "user_ids" => implode(',', $vkIds),
+            "fields" => User::UserFilters
+        );
+
+        $multiParams = self::GenerateParams($params);
+        $result = [];
+        $r = null;
+        $foundVkIds = [];
+        $vkidToSex = array();
+        $vkidToFirstNameCases = array();
+        $vkidToLastNameCases = array();
+        $vkidToStatus = array();
+        $vkidToBirthday = array();
+        $vkidToCity = array();
+        $vkidToCountry = array();
+        $vkidToDomain = array();
+        $isNullUser = false;
+        foreach ($multiParams as $p)
+        {
+            \hat();
+            $isNullUser = false;
+            try
+            {
+                $r = $users->get(SystemConfig::Get("access_token"), $p);
+            }
+            catch (Exception $e)
+            {
+                $isNullUser = true;
+            }
+            foreach ($r as $row)
+            {
+                if ($isNullUser)
+                {
+                    $result[$row["id"]] = null;
+                    continue;
+                }
+                if (!in_array($row["id"], $foundVkIds))
+                {
+                    $foundVkIds[] = $row["id"];
+                }
+                $vkidToSex[$row["id"]] = $row["sex"];
+                $vkidToBirthday[$row["id"]] = "";
+                if (isset($row["bdate"]))
+                    $vkidToBirthday[$row["id"]] = $row["bdate"];
+
+                $vkidToCity[$row["id"]] = "";
+                if (isset($row["city"]))
+                    $vkidToCity[$row["id"]] = $row["city"]["title"];
+
+                $vkidToCountry[$row["id"]] = "";
+                if (isset($row["country"]))
+                    $vkidToCountry[$row["id"]] = $row["country"]["title"];
+
+                $vkidToStatus[$row["id"]] = "";
+                if (isset($row["status"]))
+                    $vkidToStatus[$row["id"]] = $row["status"];
+
+                $vkidToDomain[$row["id"]] = $row["domain"];
+                if (!isset($vkidToFirstNameCases[$row["id"]]))
+                {
+                    $vkidToFirstNameCases[$row["id"]] = array();
+                    $vkidToLastNameCases[$row["id"]] = array();
+                }
+                $vkidToFirstNameCases[$row["id"]][$p["name_case"]] = $row["first_name"];
+                $vkidToLastNameCases[$row["id"]][$p["name_case"]] = $row["last_name"];
+            }
+        }
+
+        $firstNames = array();
+        $lastNames = array();
+        $userRes = null;
+        foreach ($foundVkIds as $id)
+        {
+            $firstNames = $vkidToFirstNameCases[$id];
+            $lastNames = $vkidToLastNameCases[$id];
+            $sex = $vkidToSex[$id];
+            $birthday = $vkidToBirthday[$id];
+            $city = $vkidToCity[$id];
+            $country = $vkidToCountry[$id];
+            $domain = $vkidToDomain[$id];
+            $status = $vkidToStatus[$id];
+
+            $userRes = $userCache->Get($id);
+            \hat();
+            if ($userRes == null)
+            {
+                $userRes = new User($id, $firstNames, $lastNames, $sex, $birthday, $city, $country, $domain, $status);
+            }
+            else if ($userCache->NeedToUpdate($id) || $userRes->HasUnfilledNameCases())
+            {
+                $userRes->__updateData($firstNames, $lastNames, $sex, $birthday, $city, $country, $domain, $status);
+            }
+            $userCache->Add($userRes);
+            $result[$id] = $userRes;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @ignore
+     */
+    private static function GetApi() : Users
+    {
+        return Bot::GetVkApi()->users();
     }
 }

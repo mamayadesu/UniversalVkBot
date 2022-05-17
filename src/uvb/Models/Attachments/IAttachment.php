@@ -2,7 +2,7 @@
 
 namespace uvb\Models\Attachments;
 
-use uvb\Models\User;
+use uvb\Models\Entity;
 
 interface IAttachment
 {
@@ -25,12 +25,7 @@ interface IAttachment
     /*
      * Владелец
      */
-    public function GetOwner() : ?User;
-
-    /*
-     * Алиас для GetOwner
-     */
-    public function GetUser() : ?User;
+    public function GetOwner() : ?Entity;
 
     /*
      * Ключ доступа ко вложению

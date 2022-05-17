@@ -27,7 +27,7 @@ class Readline extends Thread
             "cmd" => "",
             "pid" => getmypid()
         );
-        $result = $this->Send($data);
+        $result = $this->Send($this->ip, $this->port, $data);
         if ($result == "fail")
         {
             exit;
@@ -42,32 +42,35 @@ class Readline extends Thread
             }
             $input = Console::ReadLine();
             $data["cmd"] = $input;
-            $result = $this->Send($data);
+            $result = $this->Send($this->ip, $this->port, $data);
             if ($result == "fail" || $result == "Wrong URI")
             {
-                exit;
+                if (!self::IsParentStillRunning())
+                {
+                    exit;
+                }
+                Console::WriteLine("UniversalVkBot is unavailable for input command service. Is server working correctly?");
+                continue;
             }
             $data["key"] = $result;
             //Console::WriteLine("Readline: " . $input);
         }
     }
 
-    public function Send(array $data) : string
+    public static function Send(string $ip, int $port, array $data, string $uri = "cmd") : string
     {
-        $url = "http://" . $this->ip . ":" . $this->port . "/cmd";
+        $url = "http://" . $ip . ":" . $port . "/" . $uri;
         $ch = curl_init($url);
 
         $payload = json_encode($data);
-        //var_dump($payload);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type:application/json"));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLINFO_RESPONSE_CODE, true);
         $result = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         if ($code != 200)
         {
-            exit;
+            Console::WriteLine("UniversalVkBot is unavailable for input command service. Is server working correctly?");
         }
         curl_close($ch);
         return $result;

@@ -4,10 +4,12 @@ namespace uvb;
 
 use Application\Application;
 
-class ConsoleMessagesManager
+final class ConsoleMessagesManager
 {
     private array $langs;
     private string $currentLang = "";
+    public static array $langs1 = array();
+    public static string $currentLang1 = "";
     private Main $main;
 
     public function __construct(Main $main)
@@ -99,7 +101,7 @@ class ConsoleMessagesManager
         $langId = "";
         $msgId = "";
         $msgText = "";
-        $this->main->UpdateTitle();
+        \hat();
         foreach (glob($path . "*.txt") as $fullpath)
         {
             if (is_dir($fullpath))
@@ -121,7 +123,7 @@ class ConsoleMessagesManager
 
                 $this->langs[$langId][$msgId] = str_replace("\\n", "\n", $msgText);
             }
-            $this->main->UpdateTitle();
+            \hat();
         }
     }
 }

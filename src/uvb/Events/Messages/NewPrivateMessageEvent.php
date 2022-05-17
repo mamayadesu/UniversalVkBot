@@ -2,21 +2,21 @@
 
 namespace uvb\Events\Messages;
 
-use uvb\Events\EventBase;
+use uvb\Events\Event;
 use uvb\Models\User;
-use uvb\Models\InboxMessage;
+use uvb\Models\Message;
 
 /**
  * Событие. Новое входящее сообщение в личные сообщения бота
  * @package uvb\Events\Messages
  */
 
-class NewPrivateMessageEvent extends EventBase
+class NewPrivateMessageEvent extends Event
 {
     /**
      * @ignore
      */
-    private InboxMessage $inboxMessage;
+    private Message $inboxMessage;
 
     /**
      * @ignore
@@ -26,7 +26,7 @@ class NewPrivateMessageEvent extends EventBase
     /**
      * @ignore
      */
-    public function __construct(InboxMessage $im, string $rawData)
+    public function __construct(Message $im, string $rawData)
     {
         $this->inboxMessage = $im;
         $this->rawData = $rawData;
@@ -35,9 +35,9 @@ class NewPrivateMessageEvent extends EventBase
     /**
      * Получить входящее сообщение
      *
-     * @return InboxMessage Объект входящего сообщения
+     * @return Message Объект входящего сообщения
      */
-    public function GetInboxMessage() : InboxMessage
+    public function GetInboxMessage() : Message
     {
         return $this->inboxMessage;
     }

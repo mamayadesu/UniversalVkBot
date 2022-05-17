@@ -2,7 +2,7 @@
 
 namespace uvb\Models;
 
-use uvb\Plugin\PluginBase;
+use uvb\Plugin\Plugin;
 
 /**
  * Данный класс описывает зарегистрированную команду
@@ -11,7 +11,7 @@ use uvb\Plugin\PluginBase;
  *
  */
 
-class CommandInfo
+final class CommandInfo
 {
     /**
      * @ignore
@@ -26,12 +26,12 @@ class CommandInfo
     /**
      * @ignore
      */
-    private ?PluginBase $Owner;
+    private ?Plugin $Owner;
 
     /**
      * @ignore
      */
-    public function __construct(string $CommandName, string $Description, bool $AllowedForUsers, ?PluginBase $Owner)
+    public function __construct(string $CommandName, string $Description, bool $AllowedForUsers, ?Plugin $Owner)
     {
         $this->CommandName = $CommandName;
         $this->Description = $Description;
@@ -66,9 +66,9 @@ class CommandInfo
     /**
      * Получить объект плагина, к которому команда принадлежит
      *
-     * @return PluginBase|null Объект плагина, к которому принадлежит команда. Если плагин был выключен, то значение будет NULL
+     * @return Plugin|null Объект плагина, к которому принадлежит команда. Если плагин был выключен, то значение будет NULL
      */
-    public function GetOwner() : ?PluginBase
+    public function GetOwner() : ?Plugin
     {
         return $this->Owner;
     }

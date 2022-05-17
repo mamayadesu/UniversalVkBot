@@ -6,8 +6,9 @@ use uvb\cmm;
 use uvb\Main;
 use uvb\Models\Command;
 use uvb\Models\CommandInfo;
-use uvb\Repositories\MessageRepository;
+use uvb\Models\Message;
 use \Throwable;
+use uvb\System\CrashHandler;
 
 /**
  * @ignore
@@ -52,7 +53,9 @@ class CommandHandler
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.command", [$executor->GetPluginName(), $cmd->GetName(), $e->getMessage()]);
+                cmm::c("exception.command", [$executor->GetPluginName(), $cmd->GetName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $executor, $cmd);
+                $executor->DisablePlugin();
             }
         }
     }
@@ -73,11 +76,11 @@ class CommandHandler
         }
         if ($executor == null)
         {
-            MessageRepository::SendToConversation(cmm::g("command.convunknown", [$user->GetMention(), $cmd->GetName()]), $conversationId, []);
+            Message::SendToConversation(cmm::g("command.convunknown", [$user->GetMention(), $cmd->GetName()]), $conversationId, []);
         }
         else if (!$cmdi->IsAllowedForUsers() && !$user->IsAdmin())
         {
-            MessageRepository::SendToConversation(cmm::g("command.convnopermission", [$user->GetMention(), $cmd->GetName()]), $conversationId, []);
+            Message::SendToConversation(cmm::g("command.convnopermission", [$user->GetMention(), $cmd->GetName()]), $conversationId, []);
         }
         else
         {
@@ -87,7 +90,9 @@ class CommandHandler
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.conversationcommand", [$executor->GetPluginName(), $cmd->GetName(), $e->getMessage()]);
+                cmm::c("exception.conversationcommand", [$executor->GetPluginName(), $cmd->GetName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $executor, $cmd);
+                $executor->DisablePlugin();
             }
         }
     }

@@ -2,7 +2,7 @@
 
 namespace uvb\Plugin;
 
-use IO\Console;
+use \Exception;
 use uvb\Handlers\SystemCommandsHandler;
 use uvb\Main;
 use uvb\Models\CommandInfo;
@@ -10,8 +10,6 @@ use uvb\Models\CommandInfo;
 /**
  * Менеджер команд
  * @package uvb\Plugin
- *
- *
  */
 
 class CommandManager
@@ -38,7 +36,7 @@ class CommandManager
     {
         if (self::$instance != null)
         {
-            throw new \Exception("CommandManager is already initialized");
+            throw new Exception("CommandManager is already initialized");
         }
         $this->main = $main;
         self::$instance = $this;
@@ -60,9 +58,9 @@ class CommandManager
      * Удалить зарегистрированную команду для личных сообщений
      *
      * @param string $commandName Имя команды
-     * @param PluginBase $owner Плагин, к которому команда принадлежит
+     * @param Plugin $owner Плагин, к которому команда принадлежит
      */
-    public function UnregisterPrivateCommand(string $commandName, PluginBase $owner) : void
+    public function UnregisterPrivateCommand(string $commandName, Plugin $owner) : void
     {
         $k = -1;
         for ($i = 0; $i < count($this->registeredPrivateCommands); $i++)
@@ -122,9 +120,9 @@ class CommandManager
      * Удалить зарегистрированную команду для бесед
      *
      * @param string $commandName Имя команды
-     * @param PluginBase $owner Плагин, к которому принадлежит команда
+     * @param Plugin $owner Плагин, к которому принадлежит команда
      */
-    public function UnregisterConversationCommand(string $commandName, PluginBase $owner) : void
+    public function UnregisterConversationCommand(string $commandName, Plugin $owner) : void
     {
         $k = -1;
         for ($i = 0; $i < count($this->registeredConversationCommands); $i++)

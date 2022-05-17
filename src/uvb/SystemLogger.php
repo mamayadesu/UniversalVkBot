@@ -10,12 +10,13 @@ use IO\FileDirectory;
  * @ingore
  */
 
-class SystemLogger
+final class SystemLogger
 {
     private $f = null;
     private string $pathToLogs;
-    private bool $colorsEnabled;
+    private bool $colorsEnabled, $paused = false;
     private static bool $initialized = false;
+    private array $history = array();
 
     public function __construct(bool $colorsEnabled)
     {

@@ -2,7 +2,9 @@
 
 namespace uvb\Models;
 
-class UserNameCases
+use Data\Enum;
+
+class UserNameCases extends Enum
 {
     const NOM = "nom";
     const GEN = "gen";
@@ -10,18 +12,4 @@ class UserNameCases
     const ACC = "acc";
     const INS = "ins";
     const ABL = "abl";
-
-    public static function GetValues() : array
-    {
-        $obj = new UserNameCases();
-        $reflectionClass = new \ReflectionClass($obj);
-        $arr = [];
-        foreach ($reflectionClass->getConstants() as $key => $value)
-        {
-            $arr[] = $value;
-        }
-        $obj = null;
-        unset($obj);
-        return $arr;
-    }
 }

@@ -2,10 +2,11 @@
 
 namespace uvb;
 
-class cmm
+final class cmm
 {
     public static ConsoleMessagesManager $consoleMessagesManager;
     public static Bot $bot;
+
     public static function g(string $msgId, array $params = []) : string
     {
         return cmm::$consoleMessagesManager->GetMessage($msgId, $params);

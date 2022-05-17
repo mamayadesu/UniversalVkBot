@@ -105,7 +105,7 @@ class Config
     }
 
     /**
-     * Сохраняет файл конфигурации. Не требуется, если ключено авто-сохранение
+     * Сохраняет файл конфигурации. Не требуется, если включено авто-сохранение
      */
     public function Save() : void
     {
@@ -114,7 +114,7 @@ class Config
             return;
         }
         ftruncate($this->f, 0);
-        fwrite($this->f, @json_encode($this->data, JSON_PRETTY_PRINT));
+        fwrite($this->f, @json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
     /**

@@ -2,16 +2,16 @@
 
 namespace uvb\Events\InGroupUserAction;
 
-use uvb\Events\EventBase;
+use uvb\Events\Event;
 use uvb\Models\User;
-use uvb\Repositories\GroupsRepository;
+use uvb\Models\Group;
 
 /**
  * Событие. Пользователь присоединился к группе/подал заявку на вступление/заявка одобрена
  * @package uvb\Events\InGroupUserAction
  */
 
-class UserJoinGroupEvent extends EventBase
+class UserJoinGroupEvent extends Event
 {
     /**
      * @ignore
@@ -86,6 +86,6 @@ class UserJoinGroupEvent extends EventBase
             return;
         }
 
-        $this->cancelled = GroupsRepository::KickMember($this->user);
+        $this->cancelled = Group::Get()->KickMember($this->user);
     }
 }

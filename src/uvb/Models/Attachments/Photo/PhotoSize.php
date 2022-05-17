@@ -14,7 +14,12 @@ class PhotoSize
     /**
      * @ignore
      */
-    private string $url, $type;
+    private string $type;
+
+    /**
+     * @ignore
+     */
+    protected string $url;
 
     /**
      * @ignore

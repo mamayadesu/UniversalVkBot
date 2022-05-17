@@ -2,7 +2,7 @@
 
 namespace uvb;
 
-class ConversationIdsResource
+final class ConversationIdsResource
 {
-    public static ConversationIds $conversationIds;
+    public static ?ConversationIds $conversationIds = null;
 }

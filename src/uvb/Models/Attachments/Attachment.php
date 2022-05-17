@@ -2,8 +2,9 @@
 
 namespace uvb\Models\Attachments;
 
+use uvb\Models\Entity;
+use uvb\Models\Group;
 use uvb\Models\User;
-use uvb\Repositories\UserRepository;
 
 /**
  * Класс, описывающий любое вложение
@@ -49,7 +50,7 @@ class Attachment implements IAttachment
 
         $mediaType = strtolower($mediaType);
 
-        if (in_array($mediaType, AttachmentTypes::GetValues()))
+        if (AttachmentTypes::HasItem($mediaType))
         {
             $this->mediaType = $mediaType;
         }
@@ -86,23 +87,20 @@ class Attachment implements IAttachment
     }
 
     /**
-     * Получить пользователя, опубликовавшего вложение
+     * Получить пользователя или сообщество, опубликовавшего вложение
      *
-     * @return User|null Объект пользователя, опубликовавшего вложение. Данный метод вернёт NULL, если вложение было опубликовано сообществом
+     * @return Entity|null Сущность (пользователь или сообщество)
      */
-    final function GetOwner() : ?User
+    final function GetOwner() : ?Entity
     {
-        return UserRepository::Get($this->ownerId);
-    }
-
-    /**
-     * Эквивалент метода GetOwner
-     *
-     * @return User|null Объект пользователя, опубликовавшего вложение. Данный метод вернёт NULL, если вложение было опубликовано сообществом
-     */
-    final function GetUser() : ?User
-    {
-        return $this->GetOwner();
+        if ($this->ownerId > 0)
+        {
+            return User::Get($this->ownerId);
+        }
+        else
+        {
+            return Group::Get($this->ownerId);
+        }
     }
 
     /**

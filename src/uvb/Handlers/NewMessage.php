@@ -2,6 +2,7 @@
 
 namespace uvb\Handlers;
 
+use uvb\Bot;
 use uvb\cmm;
 use uvb\Events\CommandPreProcessEvent;
 use uvb\Events\Messages\BotJoinEvent;
@@ -12,7 +13,8 @@ use uvb\Events\Messages\UserLeftEvent;
 use uvb\Main;
 use uvb\Events\Messages\NewConversationMessageEvent;
 use uvb\Events\Messages\NewPrivateMessageEvent;
-use uvb\Plugin\PluginBase;
+use uvb\Plugin\Plugin;
+use uvb\System\CrashHandler;
 use \VK\Client\VKApiClient;
 use \VK\Actions\Messages;
 use \Throwable;
@@ -23,13 +25,10 @@ use \Throwable;
 
 class NewMessage
 {
-    private Messages $msgapi;
     private Main $main;
-    public bool $waitForMailing = false;
 
     public function __construct(Main $main)
     {
-        $this->msgapi = (new VKApiClient())->messages();
         $this->main = $main;
     }
 
@@ -37,7 +36,7 @@ class NewMessage
     {
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -48,7 +47,9 @@ class NewMessage
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.newmessage", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.newmessage", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
     }
@@ -57,7 +58,7 @@ class NewMessage
     {
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -68,7 +69,9 @@ class NewMessage
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.newconversationmessage", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.newconversationmessage", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
     }
@@ -77,7 +80,7 @@ class NewMessage
     {
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -88,7 +91,9 @@ class NewMessage
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.useradd", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.useradd", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
     }
@@ -97,7 +102,7 @@ class NewMessage
     {
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -108,7 +113,8 @@ class NewMessage
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.userjoin", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.userjoin", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
     }
@@ -117,7 +123,7 @@ class NewMessage
     {
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -128,7 +134,9 @@ class NewMessage
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.userleft", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.userleft", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
     }
@@ -137,7 +145,7 @@ class NewMessage
     {
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -148,7 +156,9 @@ class NewMessage
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.userkick", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.userkick", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
     }
@@ -157,7 +167,7 @@ class NewMessage
     {
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -168,7 +178,9 @@ class NewMessage
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.botjoin", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.botjoin", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
     }
@@ -177,7 +189,7 @@ class NewMessage
     {
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -188,7 +200,9 @@ class NewMessage
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.commandpreprocess", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.commandpreprocess", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
     }

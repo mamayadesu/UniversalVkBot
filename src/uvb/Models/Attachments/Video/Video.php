@@ -3,7 +3,8 @@
 namespace uvb\Models\Attachments\Video;
 
 use \Exception;
-use uvb\Config;
+use uvb\Bot;
+use uvb\System\SystemConfig;
 use uvb\Models\Attachments\Attachment;
 use uvb\Models\Attachments\AttachmentTypes;
 use VK\Client\VKApiClient;
@@ -325,21 +326,24 @@ class Video extends Attachment
     /**
      * Получить ссылки на исходные файлы видео
      *
+     * ВНИМАНИЕ! На данный момент этот метод НЕ РАБОТАЕТ. Это связано с VK API, в котором, на данный момент, боты не могут использовать метод video.get. Неизвестно, когда разработчики VK API добавят этот метод для бота и добавят ли вообще.
+     *
      * @return array Список URL на исходные файлы видео
-     * @throws InvalidVideoDataException
+     * @throws Exception
      */
     public function GetDownloadLinks() : array
     {
-        $video = (new VKApiClient())->video();
+        $video = Bot::GetVkApi()->video();
+        $videoId = $this->ownerId . "_" . $this->id . ($this->accessKey != "" ? "_" . $this->accessKey : "");
         $params = array
         (
             "owner_id" => $this->ownerId,
-            "videos" => $this->ownerId . "_" . $this->id . ($this->accessKey != "" ? "_" . $this->accessKey : ""),
+            "videos" => $videoId,
             "count" => 1
         );
         try
         {
-            $response = $video->get(Config::Get("main_admin_access_token"), $params);
+            $response = $video->get(SystemConfig::Get("access_token"), $params);
         }
         catch (Exception $e)
         {
@@ -347,15 +351,15 @@ class Video extends Attachment
         }
         if (!isset($response["items"]))
         {
-            throw new InvalidVideoDataException("\\uvb\\Models\\Attachments\\Video\\Video::GetDownloadLinks(): Key 'items' not found");
+            throw new Exception("\\uvb\\Models\\Attachments\\Video\\Video::GetDownloadLinks(): Key 'items' not found");
         }
         if (!isset($response["items"][0]))
         {
-            throw new InvalidVideoDataException("\\uvb\\Models\\Attachments\\Video\\Video::GetDownloadLinks(): Key 'items'[0] not found");
+            throw new Exception("\\uvb\\Models\\Attachments\\Video\\Video::GetDownloadLinks(): Key 'items'[0] not found");
         }
         if (!isset($response["items"][0]["files"]))
         {
-            throw new InvalidVideoDataException("\\uvb\\Models\\Attachments\\Video\\Video::GetDownloadLinks(): Key 'items'[0]'files' not found");
+            throw new Exception("\\uvb\\Models\\Attachments\\Video\\Video::GetDownloadLinks(): Key 'items'[0]'files' not found");
         }
         return $response["items"][0]["files"];
     }

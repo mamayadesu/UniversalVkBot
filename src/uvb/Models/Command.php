@@ -9,7 +9,7 @@ namespace uvb\Models;
  *
  */
 
-class Command
+final class Command
 {
     /**
      * @ignore

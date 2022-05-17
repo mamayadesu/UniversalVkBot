@@ -2,7 +2,7 @@
 
 namespace uvb\Events\InGroupUserAction;
 
-use uvb\Events\EventBase;
+use uvb\Events\Event;
 use uvb\Models\User;
 
 /**
@@ -10,7 +10,7 @@ use uvb\Models\User;
  * @package uvb\Events\InGroupUserAction
  */
 
-class UserLeftGroupEvent extends EventBase
+class UserLeftGroupEvent extends Event
 {
     /**
      * @ignore

@@ -3,14 +3,14 @@
 namespace uvb\Events\Messages;
 
 use uvb\Models\User;
-use uvb\Events\EventBase;
+use uvb\Events\Event;
 
 /**
  * Событие. Бот был добавлен в беседу
  * @package uvb\Events\Messages
  */
 
-class BotJoinEvent extends EventBase
+class BotJoinEvent extends Event
 {
     /**
      * @ignore

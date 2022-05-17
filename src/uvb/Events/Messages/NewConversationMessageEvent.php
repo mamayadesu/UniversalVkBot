@@ -2,21 +2,20 @@
 
 namespace uvb\Events\Messages;
 
-use uvb\Events\EventBase;
-use uvb\Models\InboxMessage;
-use uvb\Repositories\MessageRepository;
+use uvb\Events\Event;
+use uvb\Models\Message;
 
 /**
  * Событие. Новое входящее сообщение в беседу
  * @package uvb\Events\Messages
  */
 
-class NewConversationMessageEvent extends EventBase
+class NewConversationMessageEvent extends Event
 {
     /**
      * @ignore
      */
-    private InboxMessage $inboxMessage;
+    private Message $inboxMessage;
 
     /**
      * @ignore
@@ -31,7 +30,7 @@ class NewConversationMessageEvent extends EventBase
     /**
      * @ignore
      */
-    public function __construct(InboxMessage $inboxMessage, int $conversationId, string $rawData)
+    public function __construct(Message $inboxMessage, int $conversationId, string $rawData)
     {
         $this->inboxMessage = $inboxMessage;
         $this->conversationId = $conversationId;
@@ -42,9 +41,9 @@ class NewConversationMessageEvent extends EventBase
     /**
      * Получить входящее сообщение
      *
-     * @return InboxMessage Объект входящего сообщения
+     * @return Message Объект входящего сообщения
      */
-    public function GetInboxMessage() : InboxMessage
+    public function GetInboxMessage() : Message
     {
         return $this->inboxMessage;
     }
@@ -78,6 +77,6 @@ class NewConversationMessageEvent extends EventBase
         {
             return;
         }
-        $this->cancelled = MessageRepository::DeleteMessage($this->inboxMessage, $this->conversationId);
+        $this->cancelled = $this->inboxMessage->Delete();
     }
 }

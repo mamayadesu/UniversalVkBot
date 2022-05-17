@@ -2,24 +2,12 @@
 
 namespace uvb\Models\Buttons\Colors;
 
-class Color
+use Data\Enum;
+
+class Color extends Enum
 {
     const PRIMARY = "primary";
     const SECONDARY = "secondary";
     const NEGATIVE = "negative";
     const POSITIVE = "positive";
-
-    public static function GetValues() : array
-    {
-        $obj = new Color();
-        $reflectionClass = new \ReflectionClass($obj);
-        $arr = [];
-        foreach ($reflectionClass->getConstants() as $key => $value)
-        {
-            $arr[] = $value;
-        }
-        $obj = null;
-        unset($obj);
-        return $arr;
-    }
 }

@@ -6,8 +6,9 @@ use uvb\cmm;
 use uvb\Events\InGroupUserAction\UserJoinGroupEvent;
 use uvb\Events\InGroupUserAction\UserLeftGroupEvent;
 use uvb\Main;
-use uvb\Plugin\PluginBase;
+use uvb\Plugin\Plugin;
 use \Throwable;
+use uvb\System\CrashHandler;
 
 /**
  * @ignore
@@ -27,7 +28,7 @@ class InGroupUserAction
     {
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -38,7 +39,9 @@ class InGroupUserAction
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.conversationcommand", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.userjoingroup", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
         if ($event->IsCancelled())
@@ -56,7 +59,7 @@ class InGroupUserAction
         }
         $plugins = $this->main->pluginManager->GetPlugins();
         foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
+        {if(!$plugin instanceof Plugin)continue;
             if ($event->IsCancelled())
             {
                 break;
@@ -67,7 +70,9 @@ class InGroupUserAction
             }
             catch (Throwable $e)
             {
-                cmm::c("exception.conversationcommand", [$plugin->GetPluginName(), $e->getMessage()]);
+                cmm::c("exception.userleftgroup", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
             }
         }
     }

@@ -2,7 +2,9 @@
 
 namespace uvb\Models\Attachments;
 
-class AttachmentTypes
+use Data\Enum;
+
+class AttachmentTypes extends Enum
 {
     const PHOTO = "photo";
     const VIDEO = "video";
@@ -12,18 +14,5 @@ class AttachmentTypes
     const MARKET = "market";
     const POLL = "poll";
     const STICKER = "sticker";
-
-    public static function GetValues() : array
-    {
-        $obj = new AttachmentTypes();
-        $reflectionClass = new \ReflectionClass($obj);
-        $arr = [];
-        foreach ($reflectionClass->getConstants() as $key => $value)
-        {
-            $arr[] = $value;
-        }
-        $obj = null;
-        unset($obj);
-        return $arr;
-    }
+    const AUDIO_MESSAGE = "audio_message";
 }

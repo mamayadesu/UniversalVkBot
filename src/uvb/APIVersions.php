@@ -2,12 +2,12 @@
 
 namespace uvb;
 
-class APIVersions
+final class APIVersions
 {
     /**
      * Последняя версия API
      */
-    const API_VERSION = "7.0-pre-release-1.0.1";
+    const API_VERSION = "1.0";
 
     /**
      * Возвращает список поддерживаемых версий UniversalVkBot API
@@ -16,7 +16,7 @@ class APIVersions
      */
     public static function Get() : array
     {
-        return ["7.0-pre-release-0.1", "7.0-pre-release-0.2", "7.0-pre-release-0.3", "7.0-pre-release-0.4", "7.0-pre-release-1.0", self::API_VERSION];
+        return [self::API_VERSION];
     }
 
     /**

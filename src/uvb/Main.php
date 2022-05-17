@@ -2,13 +2,18 @@
 
 namespace uvb;
 
-use Exception;
-use \IO\Console;
+use Data\String\BackgroundColors;
+use Data\String\ColoredString;
+use Data\String\ForegroundColors;
+use \Exception;
+use HttpServer\Exceptions\ServerStartException;
+use IO\Console;
+use \Throwable;
 use \Application\Application;
 use IO\FileDirectory;
-use Phar;
-use RecursiveIteratorIterator;
-use Threading\ChildThreadedObject;
+use \Phar;
+use \RecursiveIteratorIterator;
+use Threading\SuperGlobalArray;
 use uvb\Events\CommandPreProcessEvent;
 use uvb\Events\InGroupUserAction\UserJoinGroupEvent;
 use uvb\Events\InGroupUserAction\UserLeftGroupEvent;
@@ -22,36 +27,39 @@ use uvb\Events\Messages\UserLeftEvent;
 use uvb\Events\UnregisteredVkEvent;
 use uvb\Handlers\InGroupUserAction;
 use uvb\Handlers\SystemCommandsHandler;
-use uvb\Handlers\Ticker;
 use uvb\Handlers\Unregistered;
 use uvb\Models\Attachments\AttachmentTypes;
 use uvb\Models\Command;
-use uvb\Models\InboxMessage;
+use uvb\Models\Geolocation;
+use uvb\Models\Message;
 use uvb\Models\User;
 use uvb\Models\UserSex;
 use uvb\Plugin\CommandManager;
-use uvb\Plugin\PluginBase;
+use uvb\Plugin\Plugin;
 use uvb\Plugin\PluginManager;
 use uvb\Protection\AddressBlocker;
 use uvb\Rcon\RconHandler;
 use uvb\Rcon\RconResource;
-use uvb\Repositories\MessageRepository;
-use uvb\Repositories\UserRepository;
+use uvb\Services\RamController;
+use uvb\Services\Scheduler\Scheduler;
+use uvb\Services\Scheduler\SchedulerMaster;
 use uvb\Services\UserCache;
-use uvb\System\ExitCode;
+use uvb\System\CrashHandler;
+use uvb\System\SystemConfigResource;
 use uvb\System\Update\Updater;
+use uvb\Threads\CpuChecker;
 use uvb\Threads\Readline;
 use uvb\Utils\AttachmentParser;
-use VK\Actions\Messages;
+use uvb\Utils\CpuUsage;
 use VK\Client\VKApiClient;
-use VK\Actions\Friends;
 use uvb\Handlers\NewMessage;
 use uvb\Handlers\CommandHandler;
-use uvb\Threads\Ticker as TickerThread;
-use \Swoole\Http\Server;
-use \Swoole\Http\Request;
-use \Swoole\Http\Response;
+use uvb\Threads\Scheduler as SchedulerThread;
+use \HttpServer\Server;
+use \HttpServer\Request;
+use \HttpServer\Response;
 use Threading\Threaded;
+use uvb\System\SystemConfig;
 
 /**
  * @ignore
@@ -60,49 +68,68 @@ use Threading\Threaded;
 final class Main
 {
     private static bool $mainInitialized = false;
+    private static Main $instance;
 
     private float $mt_start;
     private int $timestart = 0;
-    public ChildThreadedObject $exitCode;
+    public SuperGlobalArray $sga;
 
+    /**
+     * @var array<Threaded>
+     */
     private array/*<Threaded>*/ $threads = [];
     public array $config;
-    private int $tickerLastTick = 0;
-    private int $tickerInactiveSkipped = 0;
+    private int $schedulerLastTick = 0;
+    private int $schedulerInactiveSkipped = 0;
     private int $cmdPid = -1;
     private string $cmdNextKey = "";
     public ConsoleMessagesManager $consoleMessagesManager;
     public ConversationIds $conversationIds;
-    private VKApiClient $api;
-    private Friends $friends;
-    private Messages $messages;
+    public VKApiClient $api;
     public NewMessage $newMessage;
     public CommandHandler $commandHandler;
     public CommandManager $commandManager;
     public Unregistered $unregistered;
-    public PluginManager $pluginManager;
+    public ?PluginManager $pluginManager = null;
     public UserCache $userCache;
-    public Bot $bot;
+    public ?Bot $bot = null;
     private static User $consoleUser;
     public SystemCommandsHandler $sch;
-    public Ticker $ticker;
     public RconHandler $rconHandler;
     public InGroupUserAction $inGroupUserAction;
-    public ?Server $server;
+    public ?Server $server = null;
     private SystemLogger $sl;
     private Logger $logger;
     public Updater $updater;
+    public SchedulerMaster $schedulerMaster;
+    public RamController $ramController;
     private $stdin;
 
-    public function __construct(array $args, bool $swooleLoaded)
+    public function __construct(array $args)
     {
+        self::$instance = $this;
+        $this->ramController = new RamController($this);
+        if (!extension_loaded("curl"))
+        {
+            Console::WriteLine("UniversalVkBot requires cURL extension!", ForegroundColors::RED);
+            exit(0);
+        }
         if (self::$mainInitialized)
         {
             throw new Exception("You cannot initialize the main class.");
         }
+        $this->sga = SuperGlobalArray::GetInstance();
+        new CpuUsage();
+        if (!IS_WINDOWS)
+        {
+            $this->sga->Set(["cpu_usage"], 0);
+            $this->threads[] = CpuChecker::Run([], $this);
+        }
+        gc_enable();
         self::$mainInitialized = true;
         $this->mt_start = microtime(true);
-        $this->exitCode = ExitCode::Run([], $this)->GetChildThreadedObject();
+        $this->sga = SuperGlobalArray::GetInstance();
+        $this->sga->Set(["exitCode"], 0);
 
         $this->stdin = fopen("php://stdin", "r");
         stream_set_blocking($this->stdin, false);
@@ -113,12 +140,12 @@ final class Main
             $colorsEnabled = false;
         }
         $this->userCache = new UserCache($this);
-        $this->UpdateTitle();
-        $this->sl = new SystemLogger($colorsEnabled); $this->UpdateTitle();
-        $this->logger = new Logger("", $this->sl); $this->UpdateTitle();
+        \hat();
+        $this->sl = new SystemLogger($colorsEnabled); \hat();
+        $this->logger = new Logger("", $this->sl); \hat();
 
         $this->updater = new Updater($this, $this->logger, $this->sl);
-
+        $this->schedulerMaster = new SchedulerMaster($this);
         $this->bot = new Bot($this, $this->logger, new Logger("CONSOLE", $this->sl), $this->sl);
         cmm::$bot = $this->bot;
         $this->consoleMessagesManager = new ConsoleMessagesManager($this);
@@ -127,125 +154,39 @@ final class Main
         cmm::l("main.programversion", [Application::GetVersion()]);
         cmm::l("main.apiversion", [APIVersions::Last()]);
 
-        if (!$swooleLoaded)
-        {
-            cmm::w("swoole.notloaded", []);
-        }
-
-        $this->api = new VKApiClient();
-        $this->friends = $this->api->friends();
-        $this->messages = $this->api->messages();
-        $this->newMessage = new NewMessage($this); $this->UpdateTitle();
-        $this->commandHandler = new CommandHandler($this); $this->UpdateTitle();
-        $this->unregistered = new Unregistered($this); $this->UpdateTitle();
-        $this->pluginManager = new PluginManager($this, $this->sl); $this->UpdateTitle();
-        $this->commandManager = new CommandManager($this); $this->UpdateTitle();
-        $this->sch = new SystemCommandsHandler("System", "", "", [], $this->bot, $this->logger);
-        $this->inGroupUserAction = new InGroupUserAction($this); $this->UpdateTitle();
-        $this->sch->SetCmdMgr($this->commandManager);
-        $this->sch->SetPlgMgr($this->pluginManager);
-        $this->sch->SetMain($this);
-        $this->sch->RegisterSystemCommands();
-        $this->rconHandler = new RconHandler();
-        $this->conversationIds = new ConversationIds();
-        ConversationIdsResource::$conversationIds = $this->conversationIds;
-        RconResource::$RconHandler = $this->rconHandler;
-        $this->ticker = new Ticker($this);
-        cmm::l("bot.loadingusers");
-        $this->userCache->Load(true);
         $this->LoadData();
         if (!in_array(0, $this->config["admins"]))
         {
             $this->config["admins"][] = 0;
         }
-        /*if (strtoupper(substr(PHP_OS, 0, 3)) == "WIN" && $this->config["console_commands_input_enabled"])
-        {
-            cmm::w("main.cmdwindowsinput");
-            $this->config["console_commands_input_enabled"] = false;
-        }*/
-        ConfigResource::Init($this->config);
-        if ($this->config["rcon_enabled"])
-        {
-            if ($this->config["rcon_password"] == "")
-            {
-                cmm::w("rcon.passrequired");
-                $this->config["rcon_enabled"] = false;
-            }
-            if ($this->config["rcon_password"] == $this->GetDefaultConfig()["rcon_password"])
-            {
-                cmm::w("rcon.defaultpass");
-            }
-            if ($this->config["rcon_enabled"])
-            {
-                cmm::l("rcon.started");
-            }
-        }
-        if (!$this->config["console_commands_input_enabled"])
-        {
-            cmm::l("main.cmdinputdisabled");
-        }
+        SystemConfigResource::Init($this->config);
 
-        self::$consoleUser = new User(0, ["nom" => "CONSOLE"], ["nom" => ""], UserSex::MALE);
-
-        cmm::l("main.loadingplugins");
-        $this->pluginManager->LoadPlugins();
-        $plugins = $this->pluginManager->GetPlugins();
-        $pluginsName = [];
-        foreach ($plugins as $plugin)
-        {if(!$plugin instanceof PluginBase)continue;
-            $pluginsName[] = $plugin->GetPluginName();
-        }
-        cmm::l("main.pluginsloaded", [count($plugins), implode(", ", $pluginsName)]);
-
-        if (!$this->updater->UpdateWasFinished())
+        cmm::l("main.startinghttpserver"); \hat();
+        $this->server = new Server(SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")); \hat();
+        $this->server->On("start", function(Server $server) { $this->Server_Start($server);}); \hat();
+        $this->server->On("shutdown", function(Server $server) { $this->Server_Stop($server);}); \hat();
+        $this->server->On("request", function(Request $request, Response $response) { $this->Server_Request($request, $response);}); \hat();
+        try
         {
-            $this->updater->UpdateCommand();
+            $this->server->Start();
         }
-
-        cmm::l("main.startingticker");
-        $this->StartTicker();
-        if (Config::Get("console_commands_input_enabled") && Readline::IsWindows())
+        catch (ServerStartException $e)
         {
-            $rladdr = Config::Get("server_addr");
-            if ($rladdr == "0.0.0.0")
-            {
-                $rladdr = "127.0.0.1";
-            }
-            $rlport = Config::Get("server_port") . "";
-            $rlruntime = null;
-            try
-            {
-                $rlruntime = Readline::Run([$rladdr, $rlport], $this);
-            }
-            catch (\Exception $e)
-            {
-                $rlruntime = null;
-            }
-            if ($rlruntime != null)
-            {
-                $this->threads[] = $rlruntime;
-            }
+            $this->bot->GetLogger()->Critical("*******************************");
+            cmm::c("bot.failedtobindport", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")]);
+            $this->bot->GetLogger()->Critical("*******************************");
+            sleep(1);
+            cmm::l("bot.shuttingdown");
+            sleep(1);
+            exit(0);
         }
-        cmm::l("main.startingswoole"); $this->UpdateTitle();
-        $this->server = new Server(Config::Get("server_addr"), Config::Get("server_port")); $this->UpdateTitle();
-        $this->server->on("start", function(Server $server) { $this->Server_Start($server);}); $this->UpdateTitle();
-        $this->server->on("shutdown", function(Server $server) { $this->Server_Stop($server);}); $this->UpdateTitle();
-        $this->server->on("request", function(Request $request, Response $response) { $this->Server_Request($request, $response);}); $this->UpdateTitle();
-        $this->timestart = time(); $this->UpdateTitle();
-        $this->server->start();
-        $exitCode = $this->exitCode->Get();
-        @$this->exitCode->Exit();
-
-        if ($exitCode == 3)
+        catch (Throwable $e)
         {
-            $exitCode = 2;
-            $this->InstallUpdate();
+            $this->logger->Critical("Unhandled " . get_class($e) . " \"" . $e->getMessage() . "\" in " . $e->getFile() . " on line " . $e->getLine());
+            CrashHandler::Handle($e);
+            $this->sga->Set(["exitCode"], 255);
+            $this->bot->Shutdown();
         }
-        if ($exitCode == 2)
-        {
-            sleep(3);
-        }
-        exit($exitCode);
     }
 
     public function InstallUpdate() : void
@@ -276,7 +217,7 @@ final class Main
                 $cstrlen = strlen($class);
                 $class = substr($class, 0, $cstrlen - 4);
                 $cstrlen = strlen($class);
-                if ($class == "autoload" || $class == "thread" || ($cstrlen > 5 && substr($class, 0, 5) == "Core\\"))
+                if ($class == "autoload" || $class == "thread" || ($cstrlen > 11 && substr($class, 0, 11) == "__xrefcore\\"))
                 {
                     continue;
                 }
@@ -321,29 +262,29 @@ final class Main
         }
     }
 
-    private function StartTicker() : void
+    private function StartScheduler() : void
     {
-        $this->tickerLastTick = time();
-        $this->tickerInactiveSkipped = 0;
+        $this->schedulerLastTick = time();
+        $this->schedulerInactiveSkipped = 0;
 
-        $addr = Config::Get("server_addr");
+        $addr = SystemConfig::Get("server_addr");
         if ($addr == "0.0.0.0")
         {
             $addr = "127.0.0.1";
         }
-        $port = Config::Get("server_port") . "";
-        $tickerruntime = null;
+        $port = SystemConfig::Get("server_port") . "";
+        $schedulerruntime = null;
         try
         {
-            $tickerruntime = TickerThread::Run([$addr, $port], $this);
+            $schedulerruntime = SchedulerThread::Run([$addr, $port], $this);
         }
         catch (\Exception $e)
         {
-            $tickerruntime = null;
+            $schedulerruntime = null;
         }
-        if ($tickerruntime != null)
+        if ($schedulerruntime != null)
         {
-            $this->threads[] = $tickerruntime;
+            $this->threads[] = $schedulerruntime;
         }
         $end = floor(microtime(true) * 1000) + 100;
         while (floor(microtime(true) * 1000) <= $end) { }
@@ -352,26 +293,107 @@ final class Main
 
     private function Server_Stop(Server $server) : void
     {
-        cmm::l("swoole.shuttingdown");
-        if ($this->exitCode->Get() != 3)
+        cmm::l("http.shuttingdown");
+        if ($this->sga->Get(["exitCode"]) != 3)
         {
             $this->sl->CloseLogger();
         }
+        $exitCode = $this->sga->Get(["exitCode"]);
+        if (!IS_WINDOWS) FileDirectory::Delete(Application::GetExecutableDirectory() . "server.lock");
+        exit($exitCode);
     }
 
     private function Server_Start(Server $server) : void
     {
-        cmm::l("swoole.addr", [Config::Get("server_addr"), Config::Get("server_port")]);
-        cmm::l("swoole.uri", [Config::Get("server_addr"), Config::Get("server_port"), Config::Get("requests_uri")]);
+        cmm::l("http.addr", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")]);
+        cmm::l("http.uri", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port"), SystemConfig::Get("requests_uri")]);
+
+        $this->api = new VKApiClient();
+        $this->newMessage = new NewMessage($this); \hat();
+        $this->commandHandler = new CommandHandler($this); \hat();
+        $this->unregistered = new Unregistered($this); \hat();
+        $this->pluginManager = new PluginManager($this, $this->sl); \hat();
+        $this->commandManager = new CommandManager($this); \hat();
+        $systemScheduler = new Scheduler($this->schedulerMaster);
+        $this->sch = new SystemCommandsHandler("System", "", "", [], $this->bot, $this->logger, $systemScheduler);
+        $systemScheduler->__setPlugin($this->sch);
+        $this->inGroupUserAction = new InGroupUserAction($this); \hat();
+        $this->sch->SetCmdMgr($this->commandManager);
+        $this->sch->SetPlgMgr($this->pluginManager);
+        $this->sch->SetMain($this);
+        $this->sch->RegisterSystemCommands();
+        $this->rconHandler = new RconHandler();
+        $this->conversationIds = new ConversationIds();
+        ConversationIdsResource::$conversationIds = $this->conversationIds;
+        RconResource::$RconHandler = $this->rconHandler;
+        cmm::l("bot.loadingusers");
+        $this->userCache->Load(true);
+        if ($this->config["rcon_enabled"])
+        {
+            if ($this->config["rcon_password"] == "")
+            {
+                cmm::w("rcon.passrequired");
+                $this->config["rcon_enabled"] = false;
+            }
+            if ($this->config["rcon_password"] == $this->GetDefaultConfig()["rcon_password"])
+            {
+                cmm::w("rcon.defaultpass");
+            }
+            if ($this->config["rcon_enabled"])
+            {
+                cmm::l("rcon.started");
+            }
+        }
+
+        self::$consoleUser = new User(0, ["nom" => "CONSOLE"], ["nom" => ""], UserSex::MALE, "", "", "", "", "");
+
+        cmm::l("main.loadingplugins");
+        $this->pluginManager->LoadPlugins();
+        $plugins = $this->pluginManager->GetPlugins();
+        $pluginsName = [];
+        foreach ($plugins as $plugin)
+        {if(!$plugin instanceof Plugin)continue;
+            $pluginsName[] = $plugin->GetPluginName();
+        }
+        cmm::l("main.pluginsloaded", [count($plugins), implode(", ", $pluginsName)]);
+
+        if (!$this->updater->UpdateWasFinished())
+        {
+            $this->updater->UpdateCommand();
+        }
+
+        cmm::l("main.startingscheduler");
+        $this->StartScheduler();
+        $rladdr = SystemConfig::Get("server_addr");
+        if ($rladdr == "0.0.0.0")
+        {
+            $rladdr = "127.0.0.1";
+        }
+        $rlport = SystemConfig::Get("server_port") . "";
+        $rlruntime = null;
+        try
+        {
+            $rlruntime = Readline::Run([$rladdr, $rlport], $this);
+        }
+        catch (\Exception $e)
+        {
+            $rlruntime = null;
+        }
+        if ($rlruntime != null)
+        {
+            $this->threads[] = $rlruntime;
+        }
+
+        $this->timestart = time(); \hat();
+
         $t = (microtime(true) - $this->mt_start);
         $t = $t * 10000;
         $t = round($t);
         $t = $t / 10000;
-
         cmm::l("main.started", [$t]);
         if ($this->updater->UpdateWasFinished())
         {
-            $this->bot->GetLogger()->Log($this->bot->GetLogger()->GetColoredString(cmm::g("system.update.updated", [Application::GetVersion()]), ForegroundColors::DARK_GREEN, BackgroundColors::BLACK));
+            $this->bot->GetLogger()->Log(ColoredString::Get(cmm::g("system.update.updated", [Application::GetVersion()]), ForegroundColors::DARK_GREEN, BackgroundColors::BLACK));
         }
     }
 
@@ -380,14 +402,30 @@ final class Main
         return time() - $this->timestart;
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function GetParsedUptime() : array
     {
         $c = time() - $this->timestart;
-        $days = floor(($c) / 86400);
-        $hours = floor(($c) / 60 / 60 - $days * 24);
-        $minutes = floor(($c) / 60 - floor(($c) / 60 / 60) * 60);
-        $seconds = ((($c) - $hours * 3600 - $days * 86400 - $minutes * 60));
+        $days1 = floor(($c) / 86400);
+        $hours1 = floor(($c) / 60 / 60 - $days1 * 24);
+        $minutes1 = floor(($c) / 60 - floor(($c) / 60 / 60) * 60);
+        $seconds1 = ((($c) - $hours1 * 3600 - $days1 * 86400 - $minutes1 * 60));
 
+        $days = "$days1";
+        $hours = "$hours1";
+        $minutes = "$minutes1";
+        $seconds = "$seconds1";
+
+        if (strlen($minutes) < 2)
+        {
+            $minutes = "0" . $minutes;
+        }
+        if (strlen($seconds) < 2)
+        {
+            $seconds = "0" . $seconds;
+        }
         return array(
             "d" => $days,
             "h" => $hours,
@@ -410,46 +448,9 @@ final class Main
 
     private function UpdateTitleNotStarted() : void
     {
-        $memory_usage = false;
-        $max = -1;
-        $t = $type = "m";
-        $using = 0;
-        if (function_exists("memory_get_usage"))
-        {
-            $imax = ini_get("memory_limit");
-            $using = memory_get_peak_usage(true);
-            if ($imax != -1)
-            {
-                $imax1 = str_split($imax);
-                $t = $imax1[strlen($imax) - 1];
-                $max = substr($imax, 0, -1);
-            }
-            switch (strtolower($t))
-            {
-                case "b":
-                    $type = "b";
-                    break;
-
-                case "k":
-                    $type = "k";
-                    $using = round($using / 1024, 2);
-                    break;
-
-                default:
-                case "m":
-                    $type = "m";
-                    $using = round($using / 1024 / 1024, 2);
-                    break;
-
-                case "g":
-                    $type = "g";
-                    $using = round($using / 1024 / 1024 / 1024, 2);
-                    break;
-            }
-            $memory_usage = true;
-        }
-        $mu = ($memory_usage ? $using . " " . strtoupper($type) . "B" . " / " . ($max != -1 ? $max : "∞") . " " . strtoupper($t) . "B" : "?");
-        $title = "UniversalVkBot | Memory peak: " . $mu . " | Memory usage: " . Main::GetMemoryUsage() . " | Users cached: " . count($this->userCache->GetUsers());
+        $cpu = $this->bot->GetCpuUsage();
+        $title = "UniversalVkBot | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " | Users cached: " . count($this->userCache->GetUsers());
+        if (!IS_WINDOWS) $title .= " | CPU " . $cpu . "%";
         Application::SetTitle($title);
     }
 
@@ -457,65 +458,28 @@ final class Main
     {
         $puptime = $this->GetParsedUptime();
         $uptime_text = cmm::g("main.uptime", [$puptime["d"], $puptime["h"], $puptime["m"], $puptime["s"]]);
-        $memory_usage = false;
-        $max = -1;
-        $t = $type = "m";
-        $using = 0;
-        if (function_exists("memory_get_usage"))
-        {
-            $imax = ini_get("memory_limit");
-            $using = memory_get_peak_usage(true);
-            if ($imax != -1)
-            {
-                $imax1 = str_split($imax);
-                $t = $imax1[strlen($imax) - 1];
-                $max = substr($imax, 0, -1);
-            }
-            switch (strtolower($t))
-            {
-                case "b":
-                    $type = "b";
-                    break;
 
-                case "k":
-                    $type = "k";
-                    $using = round($using / 1024, 2);
-                    break;
-
-                default:
-                case "m":
-                    $type = "m";
-                    $using = round($using / 1024 / 1024, 2);
-                    break;
-
-                case "g":
-                    $type = "g";
-                    $using = round($using / 1024 / 1024 / 1024, 2);
-                    break;
-            }
-            $memory_usage = true;
-        }
-        $mu = ($memory_usage ? $using . " " . strtoupper($type) . "B" . " / " . ($max != -1 ? $max : "∞") . " " . strtoupper($t) . "B" : "?");
         $title = "";
+        $cpu = $this->bot->GetCpuUsage();
         if ($this->timestart > 0)
         {
-            $title = "UVB | Uptime: " . $uptime_text . " | Memory peak: " . $mu . " | Memory usage: " . Main::GetMemoryUsage() . " | Users cached: " . count($this->userCache->GetUsers());
+            $title = "UVB | Uptime: " . $uptime_text . " | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " | Users cached: " . count($this->userCache->GetUsers());
         }
         else
         {
-            $title = "UniversalVkBot | Memory peak: " . $mu . " | Memory usage: " . Main::GetMemoryUsage() . " | Users cached: " . count($this->userCache->GetUsers());
+            $title = "UniversalVkBot | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " | Users cached: " . count($this->userCache->GetUsers());
         }
+        if (!IS_WINDOWS) $title .= " | CPU " . $cpu . "%";
         Application::SetTitle($title);
     }
 
-    public static function GetMemoryUsage() : string
+    public static function GetFormattedMemory(int $mu) : string
     {
         $memory_usage = "";
-        if (!function_exists("memory_get_usage"))
+        if ($mu == -1)
         {
-            return $memory_usage;
+            return "∞";
         }
-        $mu = memory_get_usage();
         if ($mu < 1024)
         {
             $memory_usage = $mu . " B";
@@ -535,55 +499,17 @@ final class Main
         return $memory_usage;
     }
 
-    public function GetStatisticAsString() : string
+    public function GetStatusAsString() : string
     {
         $uptime = $this->GetUptime();
         $puptime = $this->GetParsedUptime();
         $uptime_text = cmm::g("main.uptime", [$puptime["d"], $puptime["h"], $puptime["m"], $puptime["s"]]);
-        $memory_usage = false;
-        $max = -1;
-        $t = $type = "m";
-        $using = 0;
-        if (function_exists("memory_get_usage"))
-        {
-            $imax = ini_get("memory_limit");
-            $using = memory_get_peak_usage(true);
-            if ($imax != -1)
-            {
-                $imax1 = str_split($imax);
-                $t = $imax1[strlen($imax) - 1];
-                $max = substr($imax, 0, -1);
-            }
-            switch (strtolower($t))
-            {
-                case "b":
-                    $type = "b";
-                    break;
-
-                case "k":
-                    $type = "k";
-                    $using = round($using / 1024, 2);
-                    break;
-
-                default:
-                case "m":
-                    $type = "m";
-                    $using = round($using / 1024 / 1024, 2);
-                    break;
-
-                case "g":
-                    $type = "g";
-                    $using = round($using / 1024 / 1024 / 1024, 2);
-                    break;
-            }
-            $memory_usage = true;
-        }
         $pid = -1;
         if (function_exists("getmypid"))
         {
             $pid = getmypid();
         }
-        $log = cmm::g("main.statistic", [Config::Get("server_addr"), Config::Get("server_port"), $uptime, $uptime_text, ($memory_usage ? $using . " " . strtoupper($type) . "B" . " / " . ($max != -1 ? $max : "∞") . " " . strtoupper($t) . "B" : "?"), self::GetMemoryUsage(), count($this->userCache->GetUsers()), ($pid != -1 ? $pid : "?")]);
+        $log = cmm::g("main.status", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port"), $uptime, $uptime_text, self::GetFormattedMemory($this->ramController->GetUsage()), self::GetFormattedMemory($this->ramController->GetAllocatedMemory()), count($this->userCache->GetUsers()), ($pid != -1 ? $pid : "?"), $this->bot->GetCpuUsage()]);
         return $log;
     }
 
@@ -594,36 +520,36 @@ final class Main
 
     public static function GetRconAsUser(int $port) : User
     {
-        return new User(-3000000000 - $port, ["nom" => "RCON"], ["nom" => ""], UserSex::FEMALE);
+        return new User(-3000000000 - $port, ["nom" => "RCON"], ["nom" => ""], UserSex::FEMALE, "", "", "", "", "");
     }
 
     private function Server_Request(Request $request, Response $response) : void
     {
         if ($this->bot->IsShuttingDown())
         {
-            $response->header("Content-Type", "text/plain");
-            $response->end("Bot is shutting down");
+            $response->Header("Content-Type", "text/plain");
+            $response->End("Bot is shutting down");
             return;
         }
-        $data = json_decode($request->rawcontent(), true);
-        $tickerAllowedAddresses = ["127.0.0.1", Config::Get("server_addr"), "192.168.1.1", "192.168.100.1", "192.168.0.1"];
-        if (!in_array($request->server["remote_addr"], $tickerAllowedAddresses))
+        $data = json_decode($request->GetRawContent(), true);
+        $schedulerAllowedAddresses = ["127.0.0.1", SystemConfig::Get("server_addr"), "192.168.1.1", "192.168.100.1", "192.168.0.1"];
+        if (!in_array($request->RemoteAddress, $schedulerAllowedAddresses))
         {
-            if ($this->bot->GetAddressBlocker()->IsBanned($request->server["remote_addr"]))
+            if ($this->bot->GetAddressBlocker()->IsBanned($request->RemoteAddress))
             {
-                $response->status(308);
-                $response->header("Location", "https:///google.ru");
-                $response->end("");
+                $response->Status(308);
+                $response->Header("Location", "https://google.ru");
+                $response->End("");
                 return;
             }
-            $uriCheck1 = AddressBlocker::UriHasThreat($request->server["request_uri"]);
-            $uriCheck2 = AddressBlocker::UriHasThreat($request->rawcontent());
+            $uriCheck1 = AddressBlocker::UriHasThreat($request->RequestUri);
+            $uriCheck2 = AddressBlocker::UriHasThreat($request->GetRawContent());
             if ($uriCheck1 || ($uriCheck2 && ($data == null || !isset($data["secret"]) || !isset($data["group_id"]))))
             {
-                $response->status(308);
-                $response->header("Location", "https://google.ru");
-                $response->end("");
-                $this->bot->GetAddressBlocker()->Ban($request->server["remote_addr"]);
+                $response->Status(308);
+                $response->Header("Location", "https://google.ru");
+                $response->End("");
+                $this->bot->GetAddressBlocker()->Ban($request->RemoteAddress);
                 $this->bot->GetAddressBlocker()->Save();
                 $uhtmsg = "";
                 if ($uriCheck1)
@@ -634,58 +560,51 @@ final class Main
                 {
                     $uhtmsg = "request.bodythreatdetected";
                 }
-                cmm::w("request.threatdetected", [$request->server["remote_addr"]]);
-                $this->bot->GetLogger()->Warn($request->server["request_uri"]);
+                cmm::w("request.threatdetected", [$request->RemoteAddress]);
+                $this->bot->GetLogger()->Warn($request->RequestUri);
                 return;
             }
         }
         $input = "";
-        if (Config::Get("console_commands_input_enabled"))
+        if ($request->RequestUri == "/cmd" && in_array($request->RemoteAddress, $schedulerAllowedAddresses))
         {
-            if (Readline::IsWindows() && $request->server["request_uri"] == "/cmd" && in_array($request->server["remote_addr"], $tickerAllowedAddresses))
+            if ($data["first"] && $this->cmdPid == -1)
             {
-                if ($data["first"] && $this->cmdPid == -1)
-                {
-                    $this->cmdPid = $data["pid"];
-                    $this->cmdNextKey = md5(time() . " " . rand(-100, 100) . md5(rand(-100, 100) . Config::Get("server_addr")));
-                    $response->end($this->cmdNextKey);
-                    return;
-                }
-                else if (!$data["first"] && $this->cmdPid != $data["pid"])
-                {
-                    $response->end("fail");
-                    return;
-                }
-                else if (!$data["first"] && $data["key"] != $this->cmdNextKey)
-                {
-                    $response->end("fail");
-                    return;
-                }
-                else if (!$data["first"] && $data["key"] == $this->cmdNextKey && $data["pid"] == $this->cmdPid)
-                {
-                    $this->cmdNextKey = md5(time() . " " . rand(-100, 100) . md5(rand(-100, 100) . Config::Get("server_addr")));
-                    $input1 = explode(' ', $data["cmd"]);
-                    $commandName = $input1[0];
-                    array_shift($input1);
-                    $command = new Command($commandName, $input1, self::GetConsoleAsUser(), 0);
-                    $_event = new CommandPreProcessEvent($command, true, 0);
-                    $this->newMessage->OnCommandPreProcess($_event);
-                    if (!$_event->IsCancelled())
-                    {
-                        $this->commandHandler->OnCommand($command);
-                    }
-                    $response->end($this->cmdNextKey);
-                    return;
-                }
-                else
-                {
-                    $response->end("fail");
-                    return;
-                }
+                $this->cmdPid = $data["pid"];
+                $this->cmdNextKey = md5(time() . " " . rand(-100, 100) . md5(rand(-100, 100) . SystemConfig::Get("server_addr")));
+                $response->End($this->cmdNextKey);
+                return;
             }
-            else if (!Readline::IsWindows())
+            else if (!$data["first"] && $this->cmdPid != $data["pid"])
             {
-                $input = rtrim(fgets($this->stdin));
+                $response->End("fail");
+                return;
+            }
+            else if (!$data["first"] && $data["key"] != $this->cmdNextKey)
+            {
+                $response->End("fail");
+                return;
+            }
+            else if (!$data["first"] && $data["key"] == $this->cmdNextKey && $data["pid"] == $this->cmdPid)
+            {
+                $this->cmdNextKey = md5(time() . " " . rand(-100, 100) . md5(rand(-100, 100) . SystemConfig::Get("server_addr")));
+                $input1 = explode(' ', $data["cmd"]);
+                $commandName = $input1[0];
+                array_shift($input1);
+                $command = new Command($commandName, $input1, self::GetConsoleAsUser(), 0);
+                $_event = new CommandPreProcessEvent($command, true, 0);
+                $this->newMessage->OnCommandPreProcess($_event);
+                if (!$_event->IsCancelled())
+                {
+                    $this->commandHandler->OnCommand($command);
+                }
+                $response->End($this->cmdNextKey);
+                return;
+            }
+            else
+            {
+                $response->End("fail");
+                return;
             }
         }
         if ($input != "")
@@ -701,43 +620,43 @@ final class Main
                 $this->commandHandler->OnCommand($command);
             }
         }
-        $response->header("Content-Type", "text/plain");
+        $response->Header("Content-Type", "text/plain");
 
-        if ((time() - $this->tickerLastTick) > 3)
+        if ((time() - $this->schedulerLastTick) > 3)
         {
-            $this->tickerInactiveSkipped++;
+            $this->schedulerInactiveSkipped++;
         }
 
-        if ($this->tickerInactiveSkipped >= 2)
+        if ($this->schedulerInactiveSkipped >= 2)
         {
-            $this->StartTicker();
+            $this->StartScheduler();
         }
 
-        if ($request->server["request_uri"] == "/ticker" && in_array($request->server["remote_addr"], $tickerAllowedAddresses))
+        if ($request->RequestUri == "/scheduler" && in_array($request->RemoteAddress, $schedulerAllowedAddresses))
         {
-            $this->tickerLastTick = time();
-            $this->tickerInactiveSkipped = 0;
-            $this->ticker->OnTick();
-            $response->end("ticker ok");
+            $this->schedulerLastTick = time();
+            $this->schedulerInactiveSkipped = 0;
+            \hat();
+            $response->End("scheduler ok");
             return;
         }
 
-        if ($request->server["request_uri"] == "/rcon")
+        if ($request->RequestUri == "/rcon")
         {
-            if (!Config::Get("rcon_enabled"))
+            if (!SystemConfig::Get("rcon_enabled"))
             {
-                $response->end("Rcon is disabled");
+                $response->End("Rcon is disabled");
                 return;
             }
             $whitelisted = true;
             $blocklisted = false;
             $seip = [];
-            $ip = $request->server["remote_addr"];
+            $ip = $request->RemoteAddress;
             $separatedIp = explode('.', $ip);
-            if (Config::Get("rcon_whitelist_enabled"))
+            if (SystemConfig::Get("rcon_whitelist_enabled"))
             {
                 $whitelisted = false;
-                foreach (Config::Get("rcon_whitelist") as $eip)
+                foreach (SystemConfig::Get("rcon_whitelist") as $eip)
                 {
                     $seip = explode('.', $eip);
                     if (count($seip) != 4)
@@ -751,7 +670,7 @@ final class Main
                     }
                 }
             }
-            foreach (Config::Get("rcon_blocklist") as $eip)
+            foreach (SystemConfig::Get("rcon_blocklist") as $eip)
             {
                 $seip = explode('.', $eip);
                 if (count($seip) != 4)
@@ -767,61 +686,61 @@ final class Main
 
             if (!$whitelisted)
             {
-                $response->end("You're not white-listed");
+                $response->End("You're not white-listed");
                 return;
             }
 
             if ($blocklisted)
             {
-                $response->end("You're block-listed");
+                $response->End("You're block-listed");
                 return;
             }
 
             if ($data == null)
             {
-                cmm::w("rcon.incorrectdata", [$ip, $request->server["remote_port"]]);
-                $this->bot->GetLogger()->Warn($request->rawcontent());
-                $response->end("Incorrect data");
+                cmm::w("rcon.incorrectdata", [$ip, $request->RemotePort]);
+                $this->bot->GetLogger()->Warn($request->GetRawContent());
+                $response->End("Incorrect data");
                 return;
             }
 
             if (!isset($data["password"]))
             {
-                cmm::w("rcon.passisnotset", [$ip, $request->server["remote_port"]]);
-                $response->end("Password is not set");
+                cmm::w("rcon.passisnotset", [$ip, $request->RemotePort]);
+                $response->End("Password is not set");
                 return;
             }
 
             if (!isset($data["cmd"]))
             {
-                cmm::w("rcon.passisnotset", [$ip, $request->server["remote_port"]]);
-                $response->end("Command is not set");
+                cmm::w("rcon.passisnotset", [$ip, $request->RemotePort]);
+                $response->End("Command is not set");
                 return;
             }
 
-            if (Config::Get("rcon_password") != $data["password"])
+            if (SystemConfig::Get("rcon_password") != $data["password"])
             {
-                cmm::e("rcon.wrongpassword", [$ip, $request->server["remote_port"]]);
-                $response->end("Wrong password");
+                cmm::e("rcon.wrongpassword", [$ip, $request->RemotePort]);
+                $response->End("Wrong password");
                 return;
             }
 
             if ($data["cmd"] == "#rconconnectioncheck")
             {
-                cmm::l("rcon.connected", [$ip, $request->server["remote_port"]]);
-                $response->end("OK");
+                cmm::l("rcon.connected", [$ip, $request->RemotePort]);
+                $response->End("OK");
                 return;
             }
             if ($data["cmd"] == "#disconnect")
             {
-                cmm::l("rcon.disconnected", [$ip, $request->server["remote_port"]]);
-                $response->end("OK");
+                cmm::l("rcon.disconnected", [$ip, $request->RemotePort]);
+                $response->End("OK");
                 return;
             }
-            $user = self::GetRconAsUser($request->server["remote_port"]);
+            $user = self::GetRconAsUser($request->RemotePort);
             $this->config["admins"][] = $user->GetVkId();
             $input = str_replace(["\r", "\n"], ["", ""], $data["cmd"]);
-            cmm::l("rcon.cmdinput", [$ip, $request->server["remote_port"], $input]);
+            cmm::l("rcon.cmdinput", [$ip, $request->RemotePort, $input]);
             $input1 = explode(' ', $input);
             $commandName = $input1[0];
             array_shift($input1);
@@ -832,18 +751,18 @@ final class Main
             {
                 $this->commandHandler->OnCommand($command);
             }
-            $responseText = $this->rconHandler->GetResponse("r" . $request->server["remote_port"]);
-            $response->end($responseText);
+            $responseText = $this->rconHandler->GetResponse("r" . $request->RemotePort);
+            $response->End($responseText);
             return;
         }
 
-        if ($request->server["request_uri"] != Config::Get("requests_uri"))
+        if ($request->RequestUri != "/" . SystemConfig::Get("requests_uri"))
         {
             $this->bot->GetLogger()->Error("*******************");
-            cmm::e("request.wronguri", [$request->server["request_uri"]]);
-            $this->bot->GetLogger()->Error($request->rawcontent());
-            $this->bot->GetLogger()->Error($request->server["remote_addr"]);
-            $response->end("Wrong URI");
+            cmm::e("request.wronguri", [$request->RequestUri]);
+            $this->bot->GetLogger()->Error($request->GetRawContent());
+            $this->bot->GetLogger()->Error($request->RemoteAddress);
+            $response->End("Wrong URI");
             $this->bot->GetLogger()->Error("*******************");
             return;
         }
@@ -851,33 +770,40 @@ final class Main
         if ($data == null)
         {
             cmm::e("request.incorrectdata");
-            $this->bot->GetLogger()->Error($request->rawcontent());
-            $response->end("Bad request");
+            $this->bot->GetLogger()->Error($request->GetRawContent());
+            $response->End("Bad request");
+            return;
+        }
+        if (!isset($data["group_id"]) || $data["group_id"] != SystemConfig::Get("group_id"))
+        {
+            cmm::w("request.invalidgroup");
+            $response->End("Invalid group");
+            return;
+        }
+        if (!isset($data["secret"]) || $data["secret"] != SystemConfig::Get("secret_key"))
+        {
+            cmm::e("request.wrongsecretkey");
+            $response->End("Invalid secret key");
             return;
         }
         if ($data["type"] == "confirmation")
         {
-            cmm::l("request.confirm");
-            if (!isset($data["group_id"]) || $data["group_id"] != Config::Get("group_id"))
+            $this->bot->GetLogger()->Log(ColoredString::Get(cmm::g("request.confirm"), ForegroundColors::PURPLE));
+            $confirmResponse = $this->bot->GetConfirmResponse();
+            $response->End($confirmResponse);
+            if ($confirmResponse == "")
             {
-                cmm::w("request.invalidgroup");
-                $response->end("Invalid group");
+                cmm::e("command.confirmresponse.get.empty");
                 return;
             }
-            if (!isset($data["secret"]) || $data["secret"] != Config::Get("secret_key"))
-            {
-                cmm::e("request.wrongsecretkey");
-                $response->end("Invalid secret key");
-                return;
-            }
-            $response->end(Config::Get("confirm_response"));
-            $this->bot->GetLogger()->Log($this->bot->GetLogger()->GetColoredString(cmm::g("request.confirmed"), ForegroundColors::GREEN, BackgroundColors::BLACK));
+            $this->bot->GetLogger()->Log(ColoredString::Get(cmm::g("request.confirmed"), ForegroundColors::GREEN));
             return;
         }
         else
         {
             $obj = array();
             $event = null;
+            $response->End("ok");
             switch ($data["type"])
             {
                 case "message_new":
@@ -885,18 +811,37 @@ final class Main
                     $date = $obj["date"];
                     $fromId = $obj["from_id"];
                     $peer_id = $obj["peer_id"];
-                    $from = UserRepository::Get($fromId);
+                    $conversation_message_id = $obj["conversation_message_id"];
+                    $from = User::Get($fromId);
                     $text = $obj["text"];
                     $attachments1 = $obj["attachments"];
                     $attachments = [];
                     $attachment = null;
+                    $geolocation = null;
+
+                    /*
+                     * #dev
+                     */
+                    $myvar = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    $myfile = fopen(Application::GetExecutableDirectory() . "test.json", "w");
+                    fwrite($myfile, $myvar);
+                    fclose($myfile);
+                    /*
+                     * ################
+                     */
+
                     foreach ($attachments1 as $attachment1)
                     {
                         $attachment = AttachmentParser::Parse($attachment1);
-                        if ($attachment != null)
+                        if ($attachment != null && $attachment->GetMediaType() != "unknown")
                         {
                             $attachments[] = $attachment;
                         }
+                    }
+
+                    if (isset($obj["geo"]))
+                    {
+                        $geolocation = Geolocation::FromVkArray($obj["geo"]);
                     }
 
                     $msgid = 0;
@@ -909,14 +854,14 @@ final class Main
                     {
                         if ($obj["action"]["type"] == "chat_invite_user")
                         {
-                            if (-$obj["action"]["member_id"] == Config::Get("group_id"))
+                            if (-$obj["action"]["member_id"] == SystemConfig::Get("group_id"))
                             {
                                 $event = new BotJoinEvent($from, $peer_id);
                                 $this->newMessage->OnBotJoin($event);
                             }
                             else if ($obj["action"]["member_id"] > 0 && $obj["action"]["member_id"] != $fromId)
                             {
-                                $event = new UserAddEvent($from, UserRepository::Get($obj["action"]["member_id"]), $peer_id);
+                                $event = new UserAddEvent($from, User::Get($obj["action"]["member_id"]), $peer_id);
                                 $this->newMessage->OnUserAdd($event);
                             }
                             else if ($obj["action"]["member_id"] == $fromId)
@@ -927,11 +872,11 @@ final class Main
                         }
                         else if ($obj["action"]["type"] == "chat_kick_user")
                         {
-                            if ($obj["action"]["member_id"] > 0 && -$fromId != Config::Get("group_id"))
+                            if ($obj["action"]["member_id"] > 0 && -$fromId != SystemConfig::Get("group_id"))
                             {
                                 if ($obj["action"]["member_id"] != $fromId)
                                 {
-                                    $event = new UserKickEvent($from, UserRepository::Get($obj["action"]["member_id"]), $peer_id);
+                                    $event = new UserKickEvent($from, User::Get($obj["action"]["member_id"]), $peer_id);
                                     $this->newMessage->OnUserKick($event);
                                 }
                                 else
@@ -946,16 +891,16 @@ final class Main
 
                     try
                     {
-                        $inboxMsg = new InboxMessage($msgid, $date, $from, $text, $peer_id, $attachments);
+                        $inboxMsg = new Message($msgid, $date, $from, $text, $peer_id, $attachments, $conversation_message_id, $geolocation);
                     }
                     catch (\Exception $e)
                     {
                         $this->bot->GetLogger()->Critical($e->getMessage());
-                        $response->end("ok");
+                        $response->End("ok");
                         return;
                     }
 
-                    if (MessageRepository::IsPrivateMessage($peer_id))
+                    if ($inboxMsg->IsPrivate())
                     {
                         if (substr($text, 0, 1) == "/")
                         {
@@ -973,7 +918,7 @@ final class Main
                         }
                         else
                         {
-                            $event = new NewPrivateMessageEvent($inboxMsg, $request->rawcontent());
+                            $event = new NewPrivateMessageEvent($inboxMsg, $request->GetRawContent());
                             $this->newMessage->OnNewPrivateMessage($event);
                         }
                     }
@@ -995,7 +940,7 @@ final class Main
                         }
                         else
                         {
-                            $event = new NewConversationMessageEvent($inboxMsg, $peer_id, $request->rawcontent());
+                            $event = new NewConversationMessageEvent($inboxMsg, $peer_id, $request->GetRawContent());
                             $this->newMessage->OnNewConversationMessage($event);
                         }
                     }
@@ -1003,7 +948,7 @@ final class Main
 
                 case "group_join":
                     $obj = $data["object"];
-                    $user = UserRepository::Get($obj["user_id"]);
+                    $user = User::Get($obj["user_id"]);
                     $__join = false;
                     $__request = false;
                     $__approved = false;
@@ -1027,20 +972,18 @@ final class Main
 
                 case "group_leave":
                     $obj = $data["object"];
-                    $user = UserRepository::Get($obj["user_id"]);
+                    $user = User::Get($obj["user_id"]);
                     $leftBySelf = $obj["self"] == 1;
                     $event = new UserLeftGroupEvent($user, $leftBySelf);
                     $this->inGroupUserAction->OnUserLeftGroup($event);
                     break;
 
                 default:
-                    $event = new UnregisteredVkEvent($request->rawcontent(), json_decode($request->rawcontent(), true), $data["type"]);
+                    $event = new UnregisteredVkEvent($request->GetRawContent(), json_decode($request->GetRawContent(), true), $data["type"]);
                     $this->unregistered->OnUnregistered($event);
                     break;
             }
         }
-        //$this->bot->Log("Response: ok");
-        $response->end("ok");
     }
 
     public function LoadData() : void
@@ -1069,6 +1012,7 @@ final class Main
                     $this->config[$key] = $value;
                 }
             }
+            $this->ramController->SetAllocatedMemory(RamController::ParseMemory($this->config["memory_limit"]));
             $f = fopen($path, "w");
             fwrite($f, json_encode($this->config, JSON_PRETTY_PRINT));
             fclose($f);
@@ -1115,15 +1059,12 @@ final class Main
             "rcon_blocklist" => [
 
             ],
-            "requests_uri" => "/request",
-            "confirm_response" => "",
-            "console_commands_input_enabled" => true,
+            "requests_uri" => "request",
             "secret_key" => "",
-            "ticker_command" => "php",
             "admins" => [
 
-            ]
+            ],
+            "memory_limit" => "512M"
         );
     }
-
 }
