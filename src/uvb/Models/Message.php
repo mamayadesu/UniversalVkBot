@@ -8,7 +8,6 @@ use uvb\System\SystemConfig;
 use uvb\System\SystemConfigResource;
 use uvb\Models\Attachments\Attachment;
 use \Exception;
-use uvb\Rcon\RconResource;
 use VK\Actions\Messages;
 use VK\Client\VKApiClient;
 use VK\Exceptions\Api\VKApiMessagesCantFwdException;
@@ -417,8 +416,6 @@ final class Message
         $vkIds = [];
         $limit = 0;
         $sentToConsole = false;
-        $sentToRcon = false;
-        $rcon = RconResource::$RconHandler;
         foreach ($users as $user)
         {if(!$user instanceof User) continue;
             if ($limit >= 100)
@@ -446,31 +443,6 @@ final class Message
                 else
                 {
                     self::ConsoleOutput(cmm::g("messagerepository.mailing.emptymessage"));
-                }
-                $sentToConsole = true;
-                continue;
-            }
-            if ($user->GetVkId() < -3000000000 && $user->GetFirstName() == "RCON")
-            {
-                if ($sentToRcon)
-                {
-                    continue;
-                }
-                if ($message != "")
-                {
-                    $rcon->SetResponse("r" . abs($user->GetVkId() + 3000000000), $message);
-                }
-                else if ($message == "" && count($attachments) > 0)
-                {
-                    $rcon->SetResponse("r" . abs($user->GetVkId() + 3000000000), cmm::g("messagerepository.mailing.attachments"));
-                }
-                else if ($message == "" && count($attachments) == 0 && $keyboard != null && $keyboard->IsKeyboardFilled())
-                {
-                    $rcon->SetResponse("r" . abs($user->GetVkId() + 3000000000), cmm::g("messagerepository.mailing.keyboard"));
-                }
-                else
-                {
-                    $rcon->SetResponse("r" . abs($user->GetVkId() + 3000000000), cmm::g("messagerepository.mailing.emptymessage"));
                 }
                 $sentToConsole = true;
                 continue;

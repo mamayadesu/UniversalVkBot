@@ -38,8 +38,6 @@ use uvb\Plugin\CommandManager;
 use uvb\Plugin\Plugin;
 use uvb\Plugin\PluginManager;
 use uvb\Protection\AddressBlocker;
-use uvb\Rcon\RconHandler;
-use uvb\Rcon\RconResource;
 use uvb\Services\RamController;
 use uvb\Services\Scheduler\Scheduler;
 use uvb\Services\Scheduler\SchedulerMaster;
@@ -95,7 +93,6 @@ final class Main
     public ?Bot $bot = null;
     private static User $consoleUser;
     public SystemCommandsHandler $sch;
-    public RconHandler $rconHandler;
     public InGroupUserAction $inGroupUserAction;
     public ?Server $server = null;
     private SystemLogger $sl;
@@ -128,7 +125,6 @@ final class Main
         gc_enable();
         self::$mainInitialized = true;
         $this->mt_start = microtime(true);
-        $this->sga = SuperGlobalArray::GetInstance();
         $this->sga->Set(["exitCode"], 0);
 
         $this->stdin = fopen("php://stdin", "r");
@@ -165,7 +161,22 @@ final class Main
         $this->server = new Server(SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")); \hat();
         $this->server->On("start", function(Server $server) { $this->Server_Start($server);}); \hat();
         $this->server->On("shutdown", function(Server $server) { $this->Server_Stop($server);}); \hat();
-        $this->server->On("request", function(Request $request, Response $response) { $this->Server_Request($request, $response);}); \hat();
+        $this->server->On("request", function(Request $request, Response $response)
+        {
+            try
+            {
+                $this->Server_Request($request, $response);
+            }
+            catch (Throwable $e)
+            {
+
+            }
+            if (!$response->IsClosed())
+            {
+                $response->Status(500);
+                $response->End("Internal Server Error");
+            }
+        }); \hat();
         try
         {
             $this->server->Start();
@@ -322,28 +333,10 @@ final class Main
         $this->sch->SetPlgMgr($this->pluginManager);
         $this->sch->SetMain($this);
         $this->sch->RegisterSystemCommands();
-        $this->rconHandler = new RconHandler();
         $this->conversationIds = new ConversationIds();
         ConversationIdsResource::$conversationIds = $this->conversationIds;
-        RconResource::$RconHandler = $this->rconHandler;
         cmm::l("bot.loadingusers");
         $this->userCache->Load(true);
-        if ($this->config["rcon_enabled"])
-        {
-            if ($this->config["rcon_password"] == "")
-            {
-                cmm::w("rcon.passrequired");
-                $this->config["rcon_enabled"] = false;
-            }
-            if ($this->config["rcon_password"] == $this->GetDefaultConfig()["rcon_password"])
-            {
-                cmm::w("rcon.defaultpass");
-            }
-            if ($this->config["rcon_enabled"])
-            {
-                cmm::l("rcon.started");
-            }
-        }
 
         self::$consoleUser = new User(0, ["nom" => "CONSOLE"], ["nom" => ""], UserSex::MALE, "", "", "", "", "");
 
@@ -518,11 +511,6 @@ final class Main
         return self::$consoleUser;
     }
 
-    public static function GetRconAsUser(int $port) : User
-    {
-        return new User(-3000000000 - $port, ["nom" => "RCON"], ["nom" => ""], UserSex::FEMALE, "", "", "", "", "");
-    }
-
     private function Server_Request(Request $request, Response $response) : void
     {
         if ($this->bot->IsShuttingDown())
@@ -638,121 +626,6 @@ final class Main
             $this->schedulerInactiveSkipped = 0;
             \hat();
             $response->End("scheduler ok");
-            return;
-        }
-
-        if ($request->RequestUri == "/rcon")
-        {
-            if (!SystemConfig::Get("rcon_enabled"))
-            {
-                $response->End("Rcon is disabled");
-                return;
-            }
-            $whitelisted = true;
-            $blocklisted = false;
-            $seip = [];
-            $ip = $request->RemoteAddress;
-            $separatedIp = explode('.', $ip);
-            if (SystemConfig::Get("rcon_whitelist_enabled"))
-            {
-                $whitelisted = false;
-                foreach (SystemConfig::Get("rcon_whitelist") as $eip)
-                {
-                    $seip = explode('.', $eip);
-                    if (count($seip) != 4)
-                    {
-                        continue;
-                    }
-                    if (($seip[0] == "*" || $seip[0] == $separatedIp[0]) && ($seip[1] == "*" || $seip[1] == $separatedIp[1]) && ($seip[2] == "*" || $seip[2] == $separatedIp[2]) && ($seip[3] == "*" || $seip[3] == $separatedIp[3]))
-                    {
-                        $whitelisted = true;
-                        break;
-                    }
-                }
-            }
-            foreach (SystemConfig::Get("rcon_blocklist") as $eip)
-            {
-                $seip = explode('.', $eip);
-                if (count($seip) != 4)
-                {
-                    continue;
-                }
-                if (($seip[0] == "*" || $seip[0] == $separatedIp[0]) && ($seip[1] == "*" || $seip[1] == $separatedIp[1]) && ($seip[2] == "*" || $seip[2] == $separatedIp[2]) && ($seip[3] == "*" || $seip[3] == $separatedIp[3]))
-                {
-                    $blocklisted = true;
-                    break;
-                }
-            }
-
-            if (!$whitelisted)
-            {
-                $response->End("You're not white-listed");
-                return;
-            }
-
-            if ($blocklisted)
-            {
-                $response->End("You're block-listed");
-                return;
-            }
-
-            if ($data == null)
-            {
-                cmm::w("rcon.incorrectdata", [$ip, $request->RemotePort]);
-                $this->bot->GetLogger()->Warn($request->GetRawContent());
-                $response->End("Incorrect data");
-                return;
-            }
-
-            if (!isset($data["password"]))
-            {
-                cmm::w("rcon.passisnotset", [$ip, $request->RemotePort]);
-                $response->End("Password is not set");
-                return;
-            }
-
-            if (!isset($data["cmd"]))
-            {
-                cmm::w("rcon.passisnotset", [$ip, $request->RemotePort]);
-                $response->End("Command is not set");
-                return;
-            }
-
-            if (SystemConfig::Get("rcon_password") != $data["password"])
-            {
-                cmm::e("rcon.wrongpassword", [$ip, $request->RemotePort]);
-                $response->End("Wrong password");
-                return;
-            }
-
-            if ($data["cmd"] == "#rconconnectioncheck")
-            {
-                cmm::l("rcon.connected", [$ip, $request->RemotePort]);
-                $response->End("OK");
-                return;
-            }
-            if ($data["cmd"] == "#disconnect")
-            {
-                cmm::l("rcon.disconnected", [$ip, $request->RemotePort]);
-                $response->End("OK");
-                return;
-            }
-            $user = self::GetRconAsUser($request->RemotePort);
-            $this->config["admins"][] = $user->GetVkId();
-            $input = str_replace(["\r", "\n"], ["", ""], $data["cmd"]);
-            cmm::l("rcon.cmdinput", [$ip, $request->RemotePort, $input]);
-            $input1 = explode(' ', $input);
-            $commandName = $input1[0];
-            array_shift($input1);
-            $command = new Command($commandName, $input1, $user, 0);
-            $_event = new CommandPreProcessEvent($command, true, 0);
-            $this->newMessage->OnCommandPreProcess($_event);
-            if (!$_event->IsCancelled())
-            {
-                $this->commandHandler->OnCommand($command);
-            }
-            $responseText = $this->rconHandler->GetResponse("r" . $request->RemotePort);
-            $response->End($responseText);
             return;
         }
 
@@ -1050,15 +923,6 @@ final class Main
             "group_id" => -1,
             "server_addr" => "0.0.0.0",
             "server_port" => 80,
-            "rcon_enabled" => false,
-            "rcon_password" => "defaultrconpass1234",
-            "rcon_whitelist_enabled" => false,
-            "rcon_whitelist" => [
-                "127.0.0.1"
-            ],
-            "rcon_blocklist" => [
-
-            ],
             "requests_uri" => "request",
             "secret_key" => "",
             "admins" => [
