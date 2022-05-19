@@ -52,6 +52,6 @@ class Scheduler extends Thread
         {
             return;
         }
-        time_nanosleep(0, $milliseconds * 1000000);
+        time_nanosleep(0, ($milliseconds * 1000000) - 160000);
     }
 }
