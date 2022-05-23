@@ -245,15 +245,20 @@ final class UserCache
 
     public function Get(int $vkId) : ?User
     {
+        if ($vkId == 0)
+            return Main::GetConsoleAsUser();
+
         if (!isset($this->cached[$vkId]))
-        {
             return null;
-        }
+
         return $this->cached[$vkId];
     }
 
     public function NeedToUpdate(int $vkId) : bool
     {
+        if ($vkId == 0)
+            return false;
+
         return ((time() - $this->cachedTime[$vkId]) >= self::USER_CACHE_TIME);
     }
 
@@ -269,7 +274,7 @@ final class UserCache
 
     public function HasUser(int $vkId) : bool
     {
-        if (!isset($this->cached[$vkId]))
+        if (!isset($this->cached[$vkId]) && $vkId != 0)
         {
             return false;
         }

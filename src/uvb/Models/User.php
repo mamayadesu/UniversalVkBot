@@ -444,10 +444,6 @@ final class User implements Entity
             {
                 break;
             }
-            if (intval($id) < 1)
-            {
-                continue;
-            }
             $vkIds1[] = intval($id);
             $limit++;
         }

@@ -14,8 +14,6 @@ class CpuChecker extends Thread
 {
     public function Threaded(array $args) : void
     {
-//        $path = Application::GetExecutableDirectory() . "server.lock";
-//        file_put_contents($path, "0");
         new CpuUsage();
         while ($this->IsParentStillRunning())
         {
@@ -33,11 +31,9 @@ class CpuChecker extends Thread
                     $cpu = floatval($output[0]);
                 }
             }
-//            $oldCpu = floatval(file_get_contents($path));
             $oldCpu = CpuUsage::GetValue();
             if ($oldCpu != $cpu)
             {
-                //file_put_contents($path, "$cpu");
                 CpuUsage::SetValue($cpu);
             }
         }

@@ -142,9 +142,9 @@ final class Bot
      * Получить пользователя по его идентификатору
      *
      * @param int $vkId Идентификатор пользователя
-     * @return User Объект пользователя
+     * @return User|null Объект пользователя
      */
-    public function GetUser(int $vkId) : User
+    public function GetUser(int $vkId) : ?User
     {
         return User::Get($vkId);
     }
