@@ -2,12 +2,15 @@
 
 namespace uvb\Models\Wall;
 
+use uvb\Bot;
 use uvb\Models\Entity;
 use uvb\Models\Group;
 use uvb\Models\User;
 use uvb\Models\Attachments\Attachment;
 use \Exception;
+use uvb\System\SystemConfig;
 use uvb\Utils\AttachmentParser;
+use \VK\Actions\Wall as VkApiWall;
 
 final class Post
 {
@@ -131,10 +134,42 @@ final class Post
         return $this->CreatedBy;
     }
 
-//    public function GetComments() : array/*<Comment>*/
-//    {
-//
-//    }
+    public function GetComments() : array/*<Comment>*/
+    {
+        /** @var array<Comment> $result */$result = [];
+        $wall = self::GetApi();
+
+        if ($this->Owner instanceof User)
+            throw new Exception("Not supported for users");
+
+        $owner_id = -(abs($this->Owner->GetVkId()));
+        $wall_getCommentsParams = array(
+            "owner_id" => $owner_id,
+            "post_id" => $this->Id,
+            "offset" => 0,
+            "count" => 100,
+            "preview_length" => 0,
+            "extended" => true,
+            "fields" => User::UserFilters
+        );
+        try
+        {
+            $response = $wall->getComments(SystemConfig::Get("access_token"), $wall_getCommentsParams);
+        }
+        catch (Exception $e)
+        {
+            Bot::GetInstance()->GetLogger()->Error("(wall" . $owner_id . "_" . $this->Id .")->GetComments(): " . $e->getMessage());
+            return $result;
+        }
+
+
+        return $result;
+    }
+
+    private static function GetApi() : VkApiWall
+    {
+        return Bot::GetVkApi()->wall();
+    }
 
     /**
      * Добавить стас.метод добавления поста
