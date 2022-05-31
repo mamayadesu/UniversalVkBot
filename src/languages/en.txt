@@ -11,7 +11,7 @@ http.uri=HTTP-server accepts requests from URL http://%s0:%s1/%s2
 http.shuttingdown=HTTP-server is shutting down...
 main.started=Bot started in %s0 sec. Type "help" to display commands list
 main.uptime=%s0d, %s1:%s2:%s3
-main.status======== Status =======\nRunning on: %s0:%s1\nUptime: (%s2) %s3\nMemory usage: %s4 / %s5\nUsers cached: %s6\nPID: %s7\nCPU usage: %s8%
+main.status======== Status =======\nRunning on: %s0:%s1\nUptime: (%s2) %s3\nMemory usage: %s4 / %s5 (%s6%)\nUsers cached: %s7\nPID: %s8\nCPU usage: %s9%
 request.wronguri=Wrong URI: %s0
 request.incorrectdata=Incorrect request content
 request.confirm=VK requests a confirmation

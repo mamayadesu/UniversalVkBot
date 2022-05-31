@@ -106,6 +106,7 @@ final class Main
     {
         self::$instance = $this;
         $this->ramController = new RamController($this);
+        \hat();
         if (!extension_loaded("curl"))
         {
             Console::WriteLine("UniversalVkBot requires cURL extension!", ForegroundColors::RED);
@@ -117,6 +118,7 @@ final class Main
         }
         $this->sga = SuperGlobalArray::GetInstance();
         new CpuUsage();
+        \hat();
         if (!IS_WINDOWS)
         {
             $this->sga->Set(["cpu_usage"], 0);
@@ -442,7 +444,7 @@ final class Main
     private function UpdateTitleNotStarted() : void
     {
         $cpu = $this->bot->GetCpuUsage();
-        $title = "UniversalVkBot | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " | Users cached: " . count($this->userCache->GetUsers());
+        $title = "UniversalVkBot | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
         if (!IS_WINDOWS) $title .= " | CPU " . $cpu . "%";
         Application::SetTitle($title);
     }
@@ -456,11 +458,11 @@ final class Main
         $cpu = $this->bot->GetCpuUsage();
         if ($this->timestart > 0)
         {
-            $title = "UVB | Uptime: " . $uptime_text . " | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " | Users cached: " . count($this->userCache->GetUsers());
+            $title = "UVB | Uptime: " . $uptime_text . " | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
         }
         else
         {
-            $title = "UniversalVkBot | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " | Users cached: " . count($this->userCache->GetUsers());
+            $title = "UniversalVkBot | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
         }
         if (!IS_WINDOWS) $title .= " | CPU " . $cpu . "%";
         Application::SetTitle($title);
@@ -502,7 +504,7 @@ final class Main
         {
             $pid = getmypid();
         }
-        $log = cmm::g("main.status", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port"), $uptime, $uptime_text, self::GetFormattedMemory($this->ramController->GetUsage()), self::GetFormattedMemory($this->ramController->GetAllocatedMemory()), count($this->userCache->GetUsers()), ($pid != -1 ? $pid : "?"), $this->bot->GetCpuUsage()]);
+        $log = cmm::g("main.status", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port"), $uptime, $uptime_text, self::GetFormattedMemory($this->ramController->GetUsage()), self::GetFormattedMemory($this->ramController->GetAllocatedMemory()), $this->ramController->GetUsagePercent(), count($this->userCache->GetUsers()), ($pid != -1 ? $pid : "?"), $this->bot->GetCpuUsage()]);
         return $log;
     }
 
