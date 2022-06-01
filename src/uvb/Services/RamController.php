@@ -51,8 +51,9 @@ class RamController
         else
         {
             exec("grep MemTotal /proc/meminfo | awk '{print $2 / 1024}'", $output, $result_code);
-            $this->TotalMemory = intval(floatval($output[0]) * 1000);
+            $this->TotalMemory = intval(floatval($output[0]) * 1000000);
         }
+        $this->AllocatedMemory = $this->TotalMemory;
     }
 
     /**
@@ -68,14 +69,14 @@ class RamController
      */
     public function GetUsagePercent() : int
     {
-        if ($this->AllocatedMemory == -1 || $this->TotalMemory == 0)
+        if ($this->AllocatedMemory == 0)
         {
             return 0;
         }
         $usage = memory_get_usage(false);
-        $total = $this->TotalMemory;
+        $allocated = $this->AllocatedMemory;
 
-        $percent = $usage / $total * 100;
+        $percent = $usage / $allocated * 100;
         return $percent;
     }
 
@@ -115,8 +116,10 @@ class RamController
     {
         if ($memory < -1 || $memory == 0)
         {
-            throw new Exception("Allocated memory can be higher than zero or can be -1");
+            throw new Exception("Allocated memory (" . $memory . ") can be higher than zero or can be -1");
         }
+        if ($memory > $this->TotalMemory)
+            throw new Exception("Allocated memory (" . $memory . ") cannot be higher than total memory of machine!");
 
         if ($memory == -1)
             $this->AllocatedMemory = $this->TotalMemory;
@@ -148,8 +151,6 @@ class RamController
             else
             {
                 Console::WriteLine("UNIVERSALVKBOT IS OUT OF MEMORY. ABORTING SYSTEM STARTING.", ForegroundColors::RED);
-                var_dump($usage);
-                var_dump($this->AllocatedMemory);
                 exit;
             }
         }
@@ -163,6 +164,11 @@ class RamController
      */
     public static function ParseMemory(string $memory) : int
     {
+        if ($memory == "-1")
+            return -1;
+
+        if (!preg_match("/^([-0-9]+)(B|K|M|G)*$/", $memory))
+            return 0;
         sscanf($memory, '%u%c', $number, $suffix);
         if (isset($suffix))
         {
