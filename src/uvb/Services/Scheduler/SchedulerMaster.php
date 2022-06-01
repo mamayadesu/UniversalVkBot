@@ -32,6 +32,9 @@ final class SchedulerMaster
 
     public function Handle() : void
     {
+        if (count($this->Queue) == 0)
+            return;
+
         $time = intval(microtime(true) * 1000);
         foreach ($this->Queue as $TaskId => $Task)
         {if(!$Task instanceof AsyncTask)continue;
