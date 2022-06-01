@@ -456,14 +456,7 @@ final class Main
 
         $title = "";
         $cpu = $this->bot->GetCpuUsage();
-        if ($this->timestart > 0)
-        {
-            $title = "UVB | Uptime: " . $uptime_text . " | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
-        }
-        else
-        {
-            $title = "UniversalVkBot | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
-        }
+        $title = "UVB | Uptime: " . $uptime_text . " | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
         if (!IS_WINDOWS) $title .= " | CPU " . $cpu . "%";
         Application::SetTitle($title);
     }
