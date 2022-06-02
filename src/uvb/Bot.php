@@ -373,10 +373,6 @@ final class Bot
     public function HandleAsyncTasksWhenProcessIsBusy() : void
     {
         $this->main->UpdateTitle();
-        if ($this->main->initiateShutdownWhenPossible)
-        {
-            $this->Shutdown();
-        }
         if ($this->main->schedulerMaster == null)
             return;
         $this->main->schedulerMaster->Handle();

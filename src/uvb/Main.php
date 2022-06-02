@@ -74,7 +74,6 @@ final class Main
     private float $mt_start;
     private int $timestart = 0;
     public SuperGlobalArray $sga;
-    public bool $initiateShutdownWhenPossible = false;
 
     /**
      * @var array<Threaded>
@@ -250,13 +249,8 @@ final class Main
 
     public function CtrlHandler() : void
     {
-        // Первое нажатие - завершение работа бота будет выполнено, когда это возможно
-        if (!$this->initiateShutdownWhenPossible)
-        {
-            $this->initiateShutdownWhenPossible = true;
-        }
-        // Второе нажатие - принудительно завершаем работу бота
-        else if (!$this->bot->IsShuttingDown())
+        // Первое нажатие - завершаем работу бота
+        if (!$this->bot->IsShuttingDown())
         {
             $this->bot->Shutdown();
         }
