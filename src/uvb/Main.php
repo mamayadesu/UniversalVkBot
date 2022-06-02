@@ -112,7 +112,7 @@ final class Main
         {
             throw new Exception("You cannot initialize the main class.");
         }
-        
+
         // запускаем свой контроллер потребления ОЗУ
         $this->ramController = new RamController($this);
         \hat();
