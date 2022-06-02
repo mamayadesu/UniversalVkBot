@@ -165,7 +165,7 @@ final class Main
         {
             sapi_windows_set_ctrl_handler(function(int $event) : void
             {
-                if (PHP_WINDOWS_EVENT_CTRL_C)
+                if ($event == PHP_WINDOWS_EVENT_CTRL_C)
                     $this->CtrlHandler();
             }, true);
         }
