@@ -1,5 +1,7 @@
 <?php
 
+declare(ticks = 1);
+
 namespace uvb;
 
 use Data\String\BackgroundColors;
@@ -30,6 +32,7 @@ use uvb\Handlers\SystemCommandsHandler;
 use uvb\Handlers\Unregistered;
 use uvb\Models\Attachments\AttachmentTypes;
 use uvb\Models\Command;
+use uvb\Models\Entity;
 use uvb\Models\Geolocation;
 use uvb\Models\Message;
 use uvb\Models\User;
@@ -71,6 +74,7 @@ final class Main
     private float $mt_start;
     private int $timestart = 0;
     public SuperGlobalArray $sga;
+    public bool $initiateShutdownWhenPossible = false;
 
     /**
      * @var array<Threaded>
@@ -145,6 +149,21 @@ final class Main
         $this->updater = new Updater($this, $this->logger, $this->sl);
         $this->schedulerMaster = new SchedulerMaster($this);
         $this->bot = new Bot($this, $this->logger, new Logger("CONSOLE", $this->sl), $this->sl);
+        if (IS_WINDOWS)
+        {
+            sapi_windows_set_ctrl_handler(function(int $event) : void
+            {
+                if (PHP_WINDOWS_EVENT_CTRL_C)
+                    $this->CtrlHandler();
+            }, true);
+        }
+        else
+        {
+            pcntl_signal(SIGINT, function() : void
+            {
+                $this->CtrlHandler();
+            });
+        }
         cmm::$bot = $this->bot;
         $this->consoleMessagesManager = new ConsoleMessagesManager($this);
 
@@ -199,6 +218,22 @@ final class Main
             CrashHandler::Handle($e);
             $this->sga->Set(["exitCode"], 255);
             $this->bot->Shutdown();
+        }
+    }
+
+    public function CtrlHandler() : void
+    {
+        if (!$this->initiateShutdownWhenPossible)
+        {
+            $this->initiateShutdownWhenPossible = true;
+        }
+        else if (!$this->bot->IsShuttingDown())
+        {
+            $this->bot->Shutdown();
+        }
+        else
+        {
+            exit(0);
         }
     }
 

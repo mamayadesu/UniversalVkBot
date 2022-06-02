@@ -145,12 +145,12 @@ class RamController
         {
             if ($this->main->bot != null)
             {
-                $this->main->bot->GetLogger()->Critical("!!!!! UNIVERSALVKBOT IS OUT OF MEMORY. EMERGENCY SHUTTING DOWN!!!");
+                $this->main->bot->GetLogger()->Critical("!!!!! UNIVERSALVKBOT IS OUT OF MEMORY. BYTES ALLOCATED: " . $this->AllocatedMemory . ", BYTES EXHAUSTED: " . ($usage - $this->AllocatedMemory) . ". EMERGENCY SHUTTING DOWN!!!");
                 $this->main->bot->Shutdown();
             }
             else
             {
-                Console::WriteLine("UNIVERSALVKBOT IS OUT OF MEMORY. ABORTING SYSTEM STARTING.", ForegroundColors::RED);
+                Console::WriteLine("UNIVERSALVKBOT IS OUT OF MEMORY. BYTES ALLOCATED: " . $this->AllocatedMemory . ", BYTES EXHAUSED: " . ($usage - $this->AllocatedMemory) . ". ABORTING SYSTEM STARTING.", ForegroundColors::RED);
                 exit;
             }
         }
