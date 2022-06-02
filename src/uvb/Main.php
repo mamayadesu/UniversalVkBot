@@ -252,12 +252,19 @@ final class Main
         // Первое нажатие - завершаем работу бота
         if (!$this->bot->IsShuttingDown())
         {
-            $this->bot->Shutdown();
+            if (SystemConfig::Get("restart_on_ctrl_c"))
+            {
+                $this->bot->Reboot();
+            }
+            else
+            {
+                $this->bot->Shutdown();
+            }
         }
         // Второе нажатие - "убиваем" процесс сервера
         else
         {
-            exit(0);
+            exit(SystemConfig::Get("restart_on_ctrl_c") ? 2 : 0);
         }
     }
 
@@ -993,7 +1000,8 @@ final class Main
             "admins" => [
 
             ],
-            "memory_limit" => "512M"
+            "memory_limit" => "512M",
+            "restart_on_ctrl_c" => true
         );
     }
 }
