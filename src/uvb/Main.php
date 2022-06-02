@@ -104,11 +104,16 @@ final class Main
     public Updater $updater;
     public SchedulerMaster $schedulerMaster;
     public RamController $ramController;
-    private $stdin;
 
     public function __construct(array $args)
     {
         self::$instance = $this;
+        if (self::$mainInitialized)
+        {
+            throw new Exception("You cannot initialize the main class.");
+        }
+        
+        // запускаем свой контроллер потребления ОЗУ
         $this->ramController = new RamController($this);
         \hat();
         if (!extension_loaded("curl"))
@@ -116,39 +121,47 @@ final class Main
             Console::WriteLine("UniversalVkBot requires cURL extension!", ForegroundColors::RED);
             exit(0);
         }
-        if (self::$mainInitialized)
-        {
-            throw new Exception("You cannot initialize the main class.");
-        }
+
         $this->sga = SuperGlobalArray::GetInstance();
         new CpuUsage();
         \hat();
         if (!IS_WINDOWS)
         {
             $this->sga->Set(["cpu_usage"], 0);
+
+            // запускаем параллельный класс, который будет чекать потребление ЦПУ
             $this->threads[] = CpuChecker::Run([], $this);
         }
+
         gc_enable();
         self::$mainInitialized = true;
         $this->mt_start = microtime(true);
         $this->sga->Set(["exitCode"], 0);
 
-        $this->stdin = fopen("php://stdin", "r");
-        stream_set_blocking($this->stdin, false);
         $pargs = Application::ParseArguments($args, "--");
         $colorsEnabled = true;
         if (isset($pargs["arguments"]["colors"]) && ($pargs["arguments"]["colors"] == "0" || $pargs["arguments"]["colors"] == "false" || $pargs["arguments"]["colors"] == "no"))
         {
             $colorsEnabled = false;
         }
+
+        // служба кэширования пользователей
         $this->userCache = new UserCache($this);
         \hat();
+
+        // логгер-мастер
         $this->sl = new SystemLogger($colorsEnabled); \hat();
+
+        // логгер бота
         $this->logger = new Logger("", $this->sl); \hat();
 
         $this->updater = new Updater($this, $this->logger, $this->sl);
+
+        // служба планировщика задач
         $this->schedulerMaster = new SchedulerMaster($this);
         $this->bot = new Bot($this, $this->logger, new Logger("CONSOLE", $this->sl), $this->sl);
+
+        // устанавливаем свой обработчик Ctrl+C
         if (IS_WINDOWS)
         {
             sapi_windows_set_ctrl_handler(function(int $event) : void
@@ -171,6 +184,7 @@ final class Main
         cmm::l("main.programversion", [Application::GetVersion()]);
         cmm::l("main.apiversion", [APIVersions::Last()]);
 
+        // загружаем config.json
         $this->LoadData();
         if (!in_array(0, $this->config["admins"]))
         {
@@ -178,26 +192,39 @@ final class Main
         }
         SystemConfigResource::Init($this->config);
 
+        /**
+         * Стартуем HTTP-сервер. После его старта продолжаем загружать всё остальное
+         *
+         * Сделано это для того, чтобы, в случае ошибки запуска HTTP-сервера, то бот сразу завершил процесс,
+         * а не после того, как уже всё загрузилось
+         */
         cmm::l("main.startinghttpserver"); \hat();
         $this->server = new Server(SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")); \hat();
         $this->server->On("start", function(Server $server) { $this->Server_Start($server);}); \hat();
         $this->server->On("shutdown", function(Server $server) { $this->Server_Stop($server);}); \hat();
         $this->server->On("request", function(Request $request, Response $response)
         {
+            // в случае какой-то необработанно ошибки, кидаем 500 ошибку,
+            // чтобы клиент не ждал бесконечное количество лет
             try
             {
                 $this->Server_Request($request, $response);
             }
             catch (Throwable $e)
             {
-
-            }
-            if (!$response->IsClosed())
-            {
-                $response->Status(500);
-                $response->End("Internal Server Error");
+                if (!$response->IsClosed())
+                {
+                    $response->Status(500);
+                    $response->End("Internal Server Error");
+                }
             }
         }); \hat();
+
+        /**
+         * Пробуем запустить HTTP-сервер
+         *
+         * В случае неудачи - завершаем работу бота
+         */
         try
         {
             $this->server->Start();
@@ -223,14 +250,17 @@ final class Main
 
     public function CtrlHandler() : void
     {
+        // Первое нажатие - завершение работа бота будет выполнено, когда это возможно
         if (!$this->initiateShutdownWhenPossible)
         {
             $this->initiateShutdownWhenPossible = true;
         }
+        // Второе нажатие - принудительно завершаем работу бота
         else if (!$this->bot->IsShuttingDown())
         {
             $this->bot->Shutdown();
         }
+        // Третье нажатие - "убиваем" процесс сервера
         else
         {
             exit(0);
@@ -351,6 +381,7 @@ final class Main
         exit($exitCode);
     }
 
+    // продолжаем запуск бота
     private function Server_Start(Server $server) : void
     {
         cmm::l("http.addr", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")]);
@@ -363,12 +394,16 @@ final class Main
         $this->pluginManager = new PluginManager($this, $this->sl); \hat();
         $this->commandManager = new CommandManager($this); \hat();
         $systemScheduler = new Scheduler($this->schedulerMaster);
+
+        // запускаем псевдо-плагин, обрабатывающий системные команды бота
         $this->sch = new SystemCommandsHandler("System", "", "", [], $this->bot, $this->logger, $systemScheduler);
         $systemScheduler->__setPlugin($this->sch);
         $this->inGroupUserAction = new InGroupUserAction($this); \hat();
         $this->sch->SetCmdMgr($this->commandManager);
         $this->sch->SetPlgMgr($this->pluginManager);
         $this->sch->SetMain($this);
+
+        // регистрируем базовые команды бота в системе
         $this->sch->RegisterSystemCommands();
         $this->conversationIds = new ConversationIds();
         ConversationIdsResource::$conversationIds = $this->conversationIds;
@@ -377,6 +412,7 @@ final class Main
 
         self::$consoleUser = new User(0, ["nom" => "CONSOLE"], ["nom" => ""], UserSex::MALE, "", "", "", "", "");
 
+        // Загружаем плагины из папки "/plugins"
         cmm::l("main.loadingplugins");
         $this->pluginManager->LoadPlugins();
         $plugins = $this->pluginManager->GetPlugins();
@@ -392,6 +428,7 @@ final class Main
             $this->updater->UpdateCommand();
         }
 
+        // Запускаем параллельный класс планировщика задач, который будет "стучаться" каждые 100 миллисекунд
         cmm::l("main.startingscheduler");
         $this->StartScheduler();
         $rladdr = SystemConfig::Get("server_addr");
@@ -401,6 +438,8 @@ final class Main
         }
         $rlport = SystemConfig::Get("server_port") . "";
         $rlruntime = null;
+
+        // запускаем параллельный класс readline
         try
         {
             $rlruntime = Readline::Run([$rladdr, $rlport], $this);
@@ -414,8 +453,10 @@ final class Main
             $this->threads[] = $rlruntime;
         }
 
+        // устанавливаем время запуска
         $this->timestart = time(); \hat();
 
+        // подсчитываем за сколько секунд запустился UniversalVkBot
         $t = (microtime(true) - $this->mt_start);
         $t = $t * 10000;
         $t = round($t);
