@@ -25,7 +25,7 @@ final class AsyncTask
     /**
      * @ignore
      */
-    private int $Interval, $TaskId, $ExecutedTimes = 0;
+    private int $Interval, $TaskId;
 
     /**
      * @ignore
@@ -40,7 +40,7 @@ final class AsyncTask
     /**
      * @ignore
      */
-    private float $NextExecution;
+    private float $NextExecution, $ExecutedTimes = 0;
 
     /**
      * @ignore
@@ -215,9 +215,9 @@ final class AsyncTask
     }
 
     /**
-     * @return int Сколько раз задача была выполнена
+     * @return float Сколько раз задача была выполнена
      */
-    public function GetExecutedTimes() : int
+    public function GetExecutedTimes() : float
     {
         return $this->ExecutedTimes;
     }
