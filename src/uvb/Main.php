@@ -84,6 +84,7 @@ final class Main
     private int $schedulerInactiveSkipped = 0;
     private int $cmdPid = -1;
     private string $cmdNextKey = "";
+    private string $title = "";
     public ConsoleMessagesManager $consoleMessagesManager;
     public ConversationIds $conversationIds;
     public VKApiClient $api;
@@ -508,25 +509,23 @@ final class Main
 
     public function UpdateTitle() : void
     {
-        if ($this->timestart > 0)
+        $title = $this->timestart > 0 ? $this->UpdateTitleStarted() : $this->UpdateTitleNotStarted();
+        if ($this->title != $title)
         {
-            $this->UpdateTitleStarted();
-        }
-        else
-        {
-            $this->UpdateTitleNotStarted();
+            $this->title = $title;
+            Application::SetTitle($title);
         }
     }
 
-    private function UpdateTitleNotStarted() : void
+    private function UpdateTitleNotStarted() : string
     {
         $cpu = $this->bot->GetCpuUsage();
         $title = "UniversalVkBot | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
         if (!IS_WINDOWS) $title .= " | CPU " . $cpu . "%";
-        Application::SetTitle($title);
+        return $title;
     }
 
-    private function UpdateTitleStarted() : void
+    private function UpdateTitleStarted() : string
     {
         $puptime = $this->GetParsedUptime();
         $uptime_text = cmm::g("main.uptime", [$puptime["d"], $puptime["h"], $puptime["m"], $puptime["s"]]);
@@ -535,7 +534,7 @@ final class Main
         $cpu = $this->bot->GetCpuUsage();
         $title = "UVB | Uptime: " . $uptime_text . " | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
         if (!IS_WINDOWS) $title .= " | CPU " . $cpu . "%";
-        Application::SetTitle($title);
+        return $title;
     }
 
     public static function GetFormattedMemory(int $mu) : string
