@@ -18,8 +18,6 @@ use uvb\Events\Messages\NewConversationMessageEvent;
 use uvb\Events\UnregisteredVkEvent;
 use uvb\Logger;
 use uvb\Models\Command;
-use uvb\Services\Scheduler\Scheduler;
-use uvb\Services\Scheduler\AsyncTask;
 
 /**
  * Данный класс описывает запущенный плагин, содержит в себе набор необходимых методов для API и является абстрактным.
@@ -54,11 +52,6 @@ abstract class Plugin
     /**
      * @ignore
      */
-    private ?Scheduler $scheduler;
-
-    /**
-     * @ignore
-     */
     private static ?Plugin $instance;
 
     /**
@@ -74,7 +67,7 @@ abstract class Plugin
     /**
      * @ignore
      */
-    final function __construct(string $name, string $version, string $api_version, array $dependences, Bot $bot, Logger $logger, Scheduler $scheduler)
+    final function __construct(string $name, string $version, string $api_version, array $dependences, Bot $bot, Logger $logger)
     {
         $this->name = $name;
         $this->version = $version;
@@ -82,7 +75,6 @@ abstract class Plugin
         $this->dependences = $dependences;
         $this->bot = $bot;
         $this->logger = $logger;
-        $this->scheduler = $scheduler;
         if ($name != "system")
         {
             self::$instance = $this;
@@ -182,16 +174,6 @@ abstract class Plugin
     }
 
     /**
-     * Получить планировщик задач для этого плагина
-     *
-     * @return Scheduler
-     */
-    final protected function GetScheduler() : Scheduler
-    {
-        return $this->scheduler;
-    }
-
-    /**
      * @ignore
      */
     final function __declareUninitializer($obj, $className) : void
@@ -238,12 +220,6 @@ abstract class Plugin
         }
         self::$instance = null;
         unset($this->logger);
-        foreach ($this->scheduler->GetTasks() as $TaskId => $Task)
-        {if(!$Task instanceof AsyncTask)continue;
-            $Task->Cancel();
-        }
-        $this->scheduler->__dispose();
-        unset($this->scheduler);
         $this->is_running = false;
     }
 

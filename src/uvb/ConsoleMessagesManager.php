@@ -101,7 +101,7 @@ final class ConsoleMessagesManager
         $langId = "";
         $msgId = "";
         $msgText = "";
-        \hat();
+        
         foreach (glob($path . "*.txt") as $fullpath)
         {
             if (is_dir($fullpath))
@@ -123,7 +123,7 @@ final class ConsoleMessagesManager
 
                 $this->langs[$langId][$msgId] = str_replace("\\n", "\n", $msgText);
             }
-            \hat();
+            
         }
     }
 }

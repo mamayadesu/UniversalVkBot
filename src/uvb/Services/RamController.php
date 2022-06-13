@@ -4,6 +4,7 @@ namespace uvb\Services;
 
 use Data\String\ForegroundColors;
 use IO\Console;
+use Scheduler\AsyncTask;
 use uvb\Main;
 use \Exception;
 
@@ -37,6 +38,7 @@ class RamController
         {
             throw new Exception("RamController is already started!");
         }
+        new AsyncTask($this, 1, false, [$this, "Check"]);
         $this->main = $main;
         ini_set("memory_limit", "-1");
         self::$instance = $this;
@@ -126,13 +128,13 @@ class RamController
         else
             $this->AllocatedMemory = $memory;
 
-        \hat();
+        
     }
 
     /**
      * @ignore
      */
-    public function Check() : void
+    public function Check(AsyncTask $task) : void
     {
         ini_set("memory_limit", "-1");
         if ($this->main->bot != null && $this->main->bot->IsShuttingDown())

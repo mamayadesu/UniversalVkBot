@@ -68,11 +68,11 @@ class AddressBlocker
 
         $data = explode("\n", $content);
 
-        \hat();
+        
         foreach ($data as $ip)
         {
             $this->Ban($ip);
-            \hat();
+            
         }
     }
 

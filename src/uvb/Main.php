@@ -10,6 +10,7 @@ use Data\String\ForegroundColors;
 use \Exception;
 use HttpServer\Exceptions\ServerStartException;
 use IO\Console;
+use Scheduler\AsyncTask;
 use \Throwable;
 use \Application\Application;
 use IO\FileDirectory;
@@ -42,20 +43,16 @@ use uvb\Plugin\Plugin;
 use uvb\Plugin\PluginManager;
 use uvb\Protection\AddressBlocker;
 use uvb\Services\RamController;
-use uvb\Services\Scheduler\Scheduler;
-use uvb\Services\Scheduler\SchedulerMaster;
 use uvb\Services\UserCache;
 use uvb\System\CrashHandler;
 use uvb\System\SystemConfigResource;
 use uvb\System\Update\Updater;
 use uvb\Threads\CpuChecker;
-use uvb\Threads\Readline;
 use uvb\Utils\AttachmentParser;
 use uvb\Utils\CpuUsage;
 use VK\Client\VKApiClient;
 use uvb\Handlers\NewMessage;
 use uvb\Handlers\CommandHandler;
-use uvb\Threads\Scheduler as SchedulerThread;
 use \HttpServer\Server;
 use \HttpServer\Request;
 use \HttpServer\Response;
@@ -80,8 +77,6 @@ final class Main
      */
     private array/*<Threaded>*/ $threads = [];
     public array $config;
-    private int $schedulerLastTick = 0;
-    private int $schedulerInactiveSkipped = 0;
     private int $cmdPid = -1;
     private string $cmdNextKey = "";
     private string $title = "";
@@ -102,7 +97,6 @@ final class Main
     private SystemLogger $sl;
     private Logger $logger;
     public Updater $updater;
-    public SchedulerMaster $schedulerMaster;
     public RamController $ramController;
 
     public function __construct(array $args)
@@ -115,7 +109,6 @@ final class Main
 
         // запускаем свой контроллер потребления ОЗУ
         $this->ramController = new RamController($this);
-        \hat();
         if (!extension_loaded("curl"))
         {
             Console::WriteLine("UniversalVkBot requires cURL extension!", ForegroundColors::RED);
@@ -124,7 +117,6 @@ final class Main
 
         $this->sga = SuperGlobalArray::GetInstance();
         new CpuUsage();
-        \hat();
         if (!IS_WINDOWS)
         {
             $this->sga->Set(["cpu_usage"], 0);
@@ -147,20 +139,17 @@ final class Main
 
         // служба кэширования пользователей
         $this->userCache = new UserCache($this);
-        \hat();
 
         // логгер-мастер
-        $this->sl = new SystemLogger($colorsEnabled); \hat();
+        $this->sl = new SystemLogger($colorsEnabled); 
 
         // логгер бота
-        $this->logger = new Logger("", $this->sl); \hat();
+        $this->logger = new Logger("", $this->sl); 
 
         $this->updater = new Updater($this, $this->logger, $this->sl);
 
-        // служба планировщика задач
-        $this->schedulerMaster = new SchedulerMaster($this);
         $this->bot = new Bot($this, $this->logger, new Logger("CONSOLE", $this->sl), $this->sl);
-
+        new AsyncTask($this, 50, false, [$this, "UpdateTitle"]);
         // устанавливаем свой обработчик Ctrl+C
         if (IS_WINDOWS)
         {
@@ -198,10 +187,10 @@ final class Main
          * Сделано это для того, чтобы, в случае ошибки запуска HTTP-сервера, то бот сразу завершил процесс,
          * а не после того, как уже всё загрузилось
          */
-        cmm::l("main.startinghttpserver"); \hat();
-        $this->server = new Server(SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")); \hat();
-        $this->server->On("start", function(Server $server) { $this->Server_Start($server);}); \hat();
-        $this->server->On("shutdown", function(Server $server) { $this->Server_Stop($server);}); \hat();
+        cmm::l("main.startinghttpserver"); 
+        $this->server = new Server(SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")); 
+        $this->server->On("start", function(Server $server) { $this->Server_Start($server);}); 
+        $this->server->On("shutdown", function(Server $server) { $this->Server_Stop($server);}); 
         $this->server->On("request", function(Request $request, Response $response)
         {
             // в случае какой-то необработанно ошибки, кидаем 500 ошибку,
@@ -218,16 +207,17 @@ final class Main
                     $response->End("Internal Server Error");
                 }
             }
-        }); \hat();
+        }); 
 
         /**
          * Пробуем запустить HTTP-сервер
          *
          * В случае неудачи - завершаем работу бота
          */
+        $this->server->DataReadTimeout = 2;
         try
         {
-            $this->server->Start();
+            $this->server->Start(true);
         }
         catch (ServerStartException $e)
         {
@@ -246,6 +236,7 @@ final class Main
             $this->sga->Set(["exitCode"], 255);
             $this->bot->Shutdown();
         }
+        $this->StartCommandHandler();
     }
 
     public function CtrlHandler() : void
@@ -266,6 +257,15 @@ final class Main
         else
         {
             exit(SystemConfig::Get("restart_on_ctrl_c") ? 2 : 0);
+        }
+    }
+
+    public function StartCommandHandler() : void
+    {
+        while (true)
+        {
+            $input = Console::ReadLine();
+            $this->bot->DispatchPrivateCommand(User::Get(0), $input);
         }
     }
 
@@ -342,35 +342,6 @@ final class Main
         }
     }
 
-    private function StartScheduler() : void
-    {
-        $this->schedulerLastTick = time();
-        $this->schedulerInactiveSkipped = 0;
-
-        $addr = SystemConfig::Get("server_addr");
-        if ($addr == "0.0.0.0")
-        {
-            $addr = "127.0.0.1";
-        }
-        $port = SystemConfig::Get("server_port") . "";
-        $schedulerruntime = null;
-        try
-        {
-            $schedulerruntime = SchedulerThread::Run([$addr, $port], $this);
-        }
-        catch (\Exception $e)
-        {
-            $schedulerruntime = null;
-        }
-        if ($schedulerruntime != null)
-        {
-            $this->threads[] = $schedulerruntime;
-        }
-        $end = floor(microtime(true) * 1000) + 100;
-        while (floor(microtime(true) * 1000) <= $end) { }
-        //Application::SetTitle(Application::GetName());
-    }
-
     private function Server_Stop(Server $server) : void
     {
         cmm::l("http.shuttingdown");
@@ -390,17 +361,15 @@ final class Main
         cmm::l("http.uri", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port"), SystemConfig::Get("requests_uri")]);
 
         $this->api = new VKApiClient();
-        $this->newMessage = new NewMessage($this); \hat();
-        $this->commandHandler = new CommandHandler($this); \hat();
-        $this->unregistered = new Unregistered($this); \hat();
-        $this->pluginManager = new PluginManager($this, $this->sl); \hat();
-        $this->commandManager = new CommandManager($this); \hat();
-        $systemScheduler = new Scheduler($this->schedulerMaster);
+        $this->newMessage = new NewMessage($this); 
+        $this->commandHandler = new CommandHandler($this); 
+        $this->unregistered = new Unregistered($this); 
+        $this->pluginManager = new PluginManager($this, $this->sl); 
+        $this->commandManager = new CommandManager($this); 
 
         // запускаем псевдо-плагин, обрабатывающий системные команды бота
-        $this->sch = new SystemCommandsHandler("System", "", "", [], $this->bot, $this->logger, $systemScheduler);
-        $systemScheduler->__setPlugin($this->sch);
-        $this->inGroupUserAction = new InGroupUserAction($this); \hat();
+        $this->sch = new SystemCommandsHandler("System", "", "", [], $this->bot, $this->logger);
+        $this->inGroupUserAction = new InGroupUserAction($this); 
         $this->sch->SetCmdMgr($this->commandManager);
         $this->sch->SetPlgMgr($this->pluginManager);
         $this->sch->SetMain($this);
@@ -430,33 +399,8 @@ final class Main
             $this->updater->UpdateCommand();
         }
 
-        // Запускаем параллельный класс планировщика задач, который будет "стучаться" каждые 100 миллисекунд
-        cmm::l("main.startingscheduler");
-        $this->StartScheduler();
-        $rladdr = SystemConfig::Get("server_addr");
-        if ($rladdr == "0.0.0.0")
-        {
-            $rladdr = "127.0.0.1";
-        }
-        $rlport = SystemConfig::Get("server_port") . "";
-        $rlruntime = null;
-
-        // запускаем параллельный класс readline
-        try
-        {
-            $rlruntime = Readline::Run([$rladdr, $rlport], $this);
-        }
-        catch (\Exception $e)
-        {
-            $rlruntime = null;
-        }
-        if ($rlruntime != null)
-        {
-            $this->threads[] = $rlruntime;
-        }
-
         // устанавливаем время запуска
-        $this->timestart = time(); \hat();
+        $this->timestart = time(); 
 
         // подсчитываем за сколько секунд запустился UniversalVkBot
         $t = (microtime(true) - $this->mt_start);
@@ -591,8 +535,8 @@ final class Main
             return;
         }
         $data = json_decode($request->GetRawContent(), true);
-        $schedulerAllowedAddresses = ["127.0.0.1", SystemConfig::Get("server_addr"), "192.168.1.1", "192.168.100.1", "192.168.0.1"];
-        if (!in_array($request->RemoteAddress, $schedulerAllowedAddresses))
+        $AllowedAddresses = ["127.0.0.1", SystemConfig::Get("server_addr"), "192.168.1.1", "192.168.100.1", "192.168.0.1"];
+        if (!in_array($request->RemoteAddress, $AllowedAddresses))
         {
             if ($this->bot->GetAddressBlocker()->IsBanned($request->RemoteAddress))
             {
@@ -625,7 +569,7 @@ final class Main
             }
         }
         $input = "";
-        if ($request->RequestUri == "/cmd" && in_array($request->RemoteAddress, $schedulerAllowedAddresses))
+        if ($request->RequestUri == "/cmd" && in_array($request->RemoteAddress, $AllowedAddresses))
         {
             if ($data["first"] && $this->cmdPid == -1)
             {
@@ -680,25 +624,6 @@ final class Main
             }
         }
         $response->Header("Content-Type", "text/plain");
-
-        if ((time() - $this->schedulerLastTick) > 3)
-        {
-            $this->schedulerInactiveSkipped++;
-        }
-
-        if ($this->schedulerInactiveSkipped >= 2)
-        {
-            $this->StartScheduler();
-        }
-
-        if ($request->RequestUri == "/scheduler" && in_array($request->RemoteAddress, $schedulerAllowedAddresses))
-        {
-            $this->schedulerLastTick = time();
-            $this->schedulerInactiveSkipped = 0;
-            \hat();
-            $response->End("scheduler ok");
-            return;
-        }
 
         if ($request->RequestUri != "/" . SystemConfig::Get("requests_uri"))
         {

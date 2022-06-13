@@ -494,7 +494,7 @@ final class User implements Entity
         $isNullUser = false;
         foreach ($multiParams as $p)
         {
-            \hat();
+            
             $isNullUser = false;
             try
             {
@@ -558,7 +558,7 @@ final class User implements Entity
             $status = $vkidToStatus[$id];
 
             $userRes = $userCache->Get($id);
-            \hat();
+            
             if ($userRes == null)
             {
                 $userRes = new User($id, $firstNames, $lastNames, $sex, $birthday, $city, $country, $domain, $status);

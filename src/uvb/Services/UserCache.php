@@ -52,7 +52,7 @@ final class UserCache
 
     public function Load(bool $outputProgress = false) : void
     {
-        \hat();
+        
         $this->cached = array();
         $this->cachedTime = array();
         $this->cacheUpdated = array();
@@ -67,7 +67,7 @@ final class UserCache
         $count = count(glob($path . "*.json"));
         $done = 0;
 
-        \hat();
+        
         $currentPercentWas = 0;
         $currentPercent = 0;
         if ($outputProgress)
@@ -95,7 +95,7 @@ final class UserCache
                 !isset($data["status"]) || !is_string($data["status"])
             )
             {
-                \hat();
+                
                 FileDirectory::Delete($filename);
                 continue;
             }
@@ -106,7 +106,7 @@ final class UserCache
             if ($updater == 100)
             {
                 $updater = 0;
-                \hat();
+                
             }
             $done++;
             $currentPercent = floor($done / $count * 100);
@@ -119,7 +119,7 @@ final class UserCache
                 }
             }
         }
-        \hat();
+        
     }
 
     /**
@@ -127,7 +127,7 @@ final class UserCache
      */
     public function Clear() : void
     {
-        \hat();
+        
         $outputProgress = true;
         $path = $this->CheckDir();
         $data = array();
@@ -148,7 +148,7 @@ final class UserCache
         {
             $this->main->bot->GetLogger()->Log($currentPercent);
         }
-        \hat();
+        
         foreach ($this->cached as $vkId => $user)
         {if (!$user instanceof User)continue;
             if (!$this->cacheUpdated[$vkId])
@@ -171,13 +171,13 @@ final class UserCache
                     $this->main->bot->GetLogger()->Log($currentPercent);
                 }
             }
-            \hat();
+            
         }
     }
 
     public function Save(bool $outputProgress = false, bool $freeRam = false) : void
     {
-        \hat();
+        
         $path = $this->CheckDir();
         $data = array();
         $f = null;
@@ -201,7 +201,7 @@ final class UserCache
         {
             cmm::l("bot.savingusers.progress", [$currentPercent]);
         }
-        \hat();
+        
         foreach ($this->cached as $vkId => $user)
         {if(!$user instanceof User)continue;
             if (!$this->cacheUpdated[$vkId])
@@ -239,7 +239,7 @@ final class UserCache
                     cmm::l("bot.savingusers.progress", [$currentPercent]);
                 }
             }
-            \hat();
+            
         }
     }
 
@@ -293,6 +293,6 @@ final class UserCache
         }
         $this->cachedTime[$user->GetVkId()] = time();
         $this->cacheUpdated[$user->GetVkId()] = true;
-        \hat();
+        
     }
 }

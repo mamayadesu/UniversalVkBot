@@ -315,7 +315,7 @@ final class Bot
         {
             cmm::l("bot.pluginsshuttingdown");
             $name = "";
-            \hat();
+            
             while (count($pluginManager->GetPlugins()) > 0)
             {
                 foreach ($pluginManager->GetPlugins() as $key => $value)
@@ -323,8 +323,8 @@ final class Bot
                     $name = $key;
                     break;
                 }
-                \hat();
-                $pluginManager->UnloadPlugin($name); \hat();
+                
+                $pluginManager->UnloadPlugin($name); 
             }
         }
         $cids = ConversationIdsResource::$conversationIds;
@@ -334,11 +334,11 @@ final class Bot
             $cids->Save();
         }
 
-        $userCache = UserCache::GetInstance(); \hat();
+        $userCache = UserCache::GetInstance(); 
         if ($userCache != null)
         {
             cmm::l("bot.savingusers");
-            $userCache->Save(true); \hat();
+            $userCache->Save(true); 
         }
 
         $this->main->KillThreads();
@@ -347,7 +347,7 @@ final class Bot
         if ($this->main->server != null)
         {
             cmm::l("bot.stoppinghttp");
-            $this->main->server->Shutdown(); \hat();
+            $this->main->server->Shutdown(); 
             if ($exitCode == 3)
             {
                 $exitCode = 2;
@@ -362,19 +362,5 @@ final class Bot
         {
             exit(0);
         }
-    }
-
-    /**
-     * Выполняет асинхронные задачи.
-     * Пожалуйста, запускайте этот метод с интервалом хотя бы раз в 0.5 — 2 секунды в коде своего плагина, выполнение которого занимает продолжительное время (например, циклы с обработкой больших данных), чтобы асинхронные задачи продолжали выполняться
-     *
-     * @return void
-     */
-    public function HandleAsyncTasksWhenProcessIsBusy() : void
-    {
-        $this->main->UpdateTitle();
-        if ($this->main->schedulerMaster == null)
-            return;
-        $this->main->schedulerMaster->Handle();
     }
 }

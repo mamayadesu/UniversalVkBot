@@ -4,6 +4,7 @@ namespace uvb\Plugin;
 
 use Application\Application;
 use \Exception;
+use Scheduler\SchedulerMaster;
 use \Throwable;
 use uvb\APIVersions;
 use uvb\Bot;
@@ -13,7 +14,6 @@ use uvb\Logger;
 use uvb\Main;
 use \RecursiveIteratorIterator;
 use uvb\Models\CommandInfo;
-use uvb\Services\Scheduler\Scheduler;
 use uvb\System\CrashHandler;
 use uvb\SystemLogger;
 
@@ -126,16 +126,16 @@ class PluginManager
             $pluginData = array();
             $filePluginJsonWasFound = false;
             $plugin = null;
-            \hat();
+            
             foreach (new RecursiveIteratorIterator($p) as $file)
             {
-                \hat();
+                
                 $ptp = "phar://" . $pluginDirectory . basename($pathToPlugin) . DIRECTORY_SEPARATOR;
                 $ptp = str_replace("\\", "/", $ptp);
                 $pathInPhar = $file->getPathName();
                 $pathInPhar = str_replace("\\", "/", $pathInPhar);
                 $pathInPhar = str_replace($ptp, "", $pathInPhar);
-                \hat();
+                
                 if ($pathInPhar == "plugin.json")
                 {
                     $filePluginJsonWasFound = true;
@@ -148,7 +148,7 @@ class PluginManager
                         $this->RemovePluginFromQueue($name);
                         return;
                     }
-                    \hat();
+                    
                     $name = $pluginData["name"];
                     $version = $pluginData["version"];
                     $api_version = $pluginData["api_version"];
@@ -176,14 +176,14 @@ class PluginManager
                     {
                         cmm::w("pluginmanager.dependences.waitingfor", [$name, implode(", ", $dependencesList)]);
                         $this->AddPluginToQueue($name, $pathToPlugin);
-                        \hat();
+                        
                         return;
                     }
                     $this->RemovePluginFromQueue($name);
-                    \hat();
+                    
                     foreach ($priorities as $priority)
                     {
-                        \hat();
+                        
                         if (class_exists($priority))
                         {
                             cmm::w("pluginmanager.priorityalreadydeclared", [$priority]);
@@ -199,7 +199,7 @@ class PluginManager
                         $priority .= ".php";
                         if (!in_array($ptp . "src/" . $priority, $already_included))
                         {
-                            \hat();
+                            
                             try
                             {
                                 require_once $ptp . "src/" . $priority;
@@ -212,11 +212,11 @@ class PluginManager
                                 return;
                             }
                             $already_included[] = $ptp . "src/" . $priority;
-                            \hat();
+                            
                         }
-                        \hat();
+                        
                     }
-                    \hat();
+                    
                 }
                 else if (!$filePluginJsonWasFound)
                 {
@@ -224,7 +224,7 @@ class PluginManager
                     $this->RemovePluginFromQueue($name);
                     return;
                 }
-                \hat();
+                
                 $spath = explode('/', $pathInPhar);
                 if (strtolower($spath[0]) != "src")
                 {
@@ -241,7 +241,7 @@ class PluginManager
                 array_shift($class_name1);
                 $class_name = implode("\\", $class_name1);
                 $class_name = substr($class_name, 0, strlen($class_name) - 4);
-                \hat();
+                
                 if (class_exists($class_name))
                 {
                     cmm::w("pluginmanager.alreadydeclared", [$class_name]);
@@ -262,9 +262,9 @@ class PluginManager
                     CrashHandler::Handle($ex);
                     return;
                 }
-                \hat();
+                
             }
-            \hat();
+            
             if (!$filePluginJsonWasFound)
             {
                 cmm::e("pluginmanager.notplugin", [$pathToPlugin]);
@@ -272,10 +272,10 @@ class PluginManager
                 return;
             }
             $this->LoadPluginFromSource($name, $version, $api_version, $main, $privateCommands, $conversationCommands, $dependences);
-            \hat();
+            
             foreach ($this->waitingForPlugins as $pluginName => $pathToPlugin)
             {
-                \hat();
+                
                 if (!file_exists($pathToPlugin))
                 {
                     cmm::e("pluginmanager.dependences.filenotfound", [$pluginName, $pathToPlugin]);
@@ -307,7 +307,7 @@ class PluginManager
      */
     public function LoadPluginFromSource(string $name, string $version, string $api_version, string $main, array $privateCommands, array $conversationCommands, array $dependences) : void
     {
-        \hat();
+        
         cmm::l("pluginmanager.loading", [$name, $version]);
         if (!in_array($api_version, APIVersions::Get()))
         {
@@ -324,11 +324,9 @@ class PluginManager
             cmm::e("pluginmanager.invalidname", [$name]);
             return;
         }
-        \hat();
-        $scheduler = new Scheduler($this->main->schedulerMaster);
         try
         {
-            $plugin = new $main($name, $version, $api_version, $dependences, $this->main->bot, new Logger($name, $this->sl), $scheduler);
+            $plugin = new $main($name, $version, $api_version, $dependences, $this->main->bot, new Logger($name, $this->sl));
         }
         catch (Exception $ex)
         {
@@ -336,37 +334,35 @@ class PluginManager
             CrashHandler::Handle($ex);
             return;
         }
-        $scheduler->__setPlugin($plugin);
-        \hat();
         if (!$plugin instanceof Plugin)
         {
             cmm::e("pluginmanager.wrongmain", [$name]);
             return;
         }
-        \hat();
+        
         $plugin->__declareUninitializer($plugin, $main);
         foreach ($privateCommands as $cmd => $cmdInfo)
         {
-            $this->main->commandManager->RegisterPrivateCommand(new CommandInfo($cmd, "[" . $name . "] " . $cmdInfo["description"], $cmdInfo["allowed_for_users"], $plugin)); \hat();
+            $this->main->commandManager->RegisterPrivateCommand(new CommandInfo($cmd, "[" . $name . "] " . $cmdInfo["description"], $cmdInfo["allowed_for_users"], $plugin)); 
         }
-        \hat();
+        
         foreach ($conversationCommands as $cmd => $cmdInfo)
         {
-            $this->main->commandManager->RegisterConversationCommand(new CommandInfo($cmd, "[" . $name . "] " . $cmdInfo["description"], $cmdInfo["allowed_for_users"], $plugin)); \hat();
+            $this->main->commandManager->RegisterConversationCommand(new CommandInfo($cmd, "[" . $name . "] " . $cmdInfo["description"], $cmdInfo["allowed_for_users"], $plugin)); 
         }
-        \hat();
+        
         $this->loadedPlugins[$name] = $plugin;
         $this->RemovePluginFromQueue($name);
-        \hat();
+        
         try
         {
             $plugin->OnEnable();
         }
         catch (Throwable $e)
         {
-            cmm::c("pluginmanager.erroroccured", [$name, $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]); \hat();
+            cmm::c("pluginmanager.erroroccured", [$name, $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]); 
             CrashHandler::Handle($e, $plugin);
-            $plugin->DisablePlugin(); \hat();
+            $plugin->DisablePlugin(); 
             return;
         }
     }
@@ -428,7 +424,6 @@ class PluginManager
      */
     public function UnloadPlugin(string $name, bool $printErrors = true) : void
     {
-        \hat();
         if (!isset($this->loadedPlugins[$name]) || !$this->loadedPlugins[$name] instanceof Plugin)
         {
             if ($printErrors)
@@ -437,17 +432,24 @@ class PluginManager
             }
             return;
         }
-        cmm::l("pluginmanager.stoppingplugin", [$name]); \hat();
+        cmm::l("pluginmanager.stoppingplugin", [$name]);
+        $plugin = $this->loadedPlugins[$name];
+
+        foreach (SchedulerMaster::GetActiveTasks() as $Task)
+        {
+            if (get_class($Task->GetThis()) == get_class($plugin))
+                $Task->Cancel();
+        }
+
         try
         {
-            $this->loadedPlugins[$name]->OnDisable();
+            $plugin->OnDisable();
         }
         catch (Throwable $e)
         {
             cmm::c("pluginmanager.disableerroroccured", [$name, $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
             CrashHandler::Handle($e, $this->loadedPlugins[$name]);
         }
-        \hat();
 
         if (!in_array($name, $this->unloadedPlugins))
         {
@@ -457,39 +459,36 @@ class PluginManager
         $commands = $this->main->commandManager->GetRegisteredPrivateCommands();
         foreach ($commands as $cmd)
         {if (!$cmd instanceof CommandInfo) continue;
-            \hat();
-            if ($cmd->GetOwner() == $this->loadedPlugins[$name])
+            if ($cmd->GetOwner() == $plugin)
             {
-                $this->main->commandManager->UnregisterPrivateCommand($cmd->GetCommandName(), $cmd->GetOwner()); \hat();
+                $this->main->commandManager->UnregisterPrivateCommand($cmd->GetCommandName(), $cmd->GetOwner()); 
             }
         }
 
-        $commands = $this->main->commandManager->GetRegisteredConversationCommands(); \hat();
+        $commands = $this->main->commandManager->GetRegisteredConversationCommands(); 
         foreach ($commands as $cmd)
         {if (!$cmd instanceof CommandInfo) continue;
-            \hat();
-            if ($cmd->GetOwner() == $this->loadedPlugins[$name])
+            
+            if ($cmd->GetOwner() == $plugin)
             {
-                $this->main->commandManager->UnregisterConversationCommand($cmd->GetCommandName(), $cmd->GetOwner()); \hat();
+                $this->main->commandManager->UnregisterConversationCommand($cmd->GetCommandName(), $cmd->GetOwner()); 
             }
         }
-        $this->loadedPlugins[$name]->UninitializeFields($this->loadedPlugins[$name]); \hat();
+        $this->loadedPlugins[$name]->UninitializeFields($this->loadedPlugins[$name]); 
         $dependences = [];
-        foreach ($this->GetPlugins() as $plugName => $plugin)
+        foreach ($this->GetPlugins() as $plugName => $p)
         {
-            $dependences = $plugin->GetDependences();
+            $dependences = $p->GetDependences();
             if (in_array($name, $dependences))
             {
-                cmm::w("pluginmanager.dependences.forceunloading", [$plugName, implode(", ", $dependences)]); \hat();
-                $this->UnloadPlugin($plugName); \hat();
+                cmm::w("pluginmanager.dependences.forceunloading", [$plugName, implode(", ", $dependences)]); 
+                $this->UnloadPlugin($plugName); 
             }
         }
-        \hat();
-        $obj = $this->loadedPlugins[$name];
-        $obj->SystemPluginDisabling(); \hat();
+        $plugin->SystemPluginDisabling();
         $this->loadedPlugins[$name] = null;
-        unset($this->loadedPlugins[$name]); \hat();
-        $obj = null;
+        unset($this->loadedPlugins[$name]);
+        $plugin = null;
         unset($obj);
     }
 
