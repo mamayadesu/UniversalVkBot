@@ -1,4 +1,5 @@
 <?php
+declare(ticks = 1);
 namespace VK\Actions;
 
 use VK\Actions\Enums\VideoReason;

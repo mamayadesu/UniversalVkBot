@@ -1,10 +1,12 @@
 <?php
+declare(ticks = 1);
 
 namespace uvb\Services;
 
 use Data\String\ForegroundColors;
 use IO\Console;
 use Scheduler\AsyncTask;
+use Scheduler\NoAsyncTaskParameters;
 use uvb\Main;
 use \Exception;
 
@@ -38,8 +40,8 @@ class RamController
         {
             throw new Exception("RamController is already started!");
         }
-        new AsyncTask($this, 1, false, [$this, "Check"]);
         $this->main = $main;
+        new AsyncTask($this, 1, false, [$this, "Check"]);
         ini_set("memory_limit", "-1");
         self::$instance = $this;
         if (IS_WINDOWS)
@@ -134,7 +136,7 @@ class RamController
     /**
      * @ignore
      */
-    public function Check(AsyncTask $task) : void
+    public function Check(AsyncTask $task, NoAsyncTaskParameters $params) : void
     {
         ini_set("memory_limit", "-1");
         if ($this->main->bot != null && $this->main->bot->IsShuttingDown())

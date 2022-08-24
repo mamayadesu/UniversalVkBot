@@ -1,4 +1,4 @@
-xrefcore-compiler -b
+xrefcore-compiler -b -d
 if ((Test-Path -Path "D:\UVB Server\UniversalVkBot.phar" -PathType Leaf) -eq $true) {
     Remove-Item "D:\UVB Server\UniversalVkBot.phar"
 }

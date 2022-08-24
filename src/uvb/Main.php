@@ -1,5 +1,4 @@
 <?php
-
 declare(ticks = 1);
 
 namespace uvb;
@@ -11,6 +10,7 @@ use \Exception;
 use HttpServer\Exceptions\ServerStartException;
 use IO\Console;
 use Scheduler\AsyncTask;
+use Scheduler\NoAsyncTaskParameters;
 use \Throwable;
 use \Application\Application;
 use IO\FileDirectory;
@@ -210,7 +210,7 @@ final class Main
         }); 
 
         /**
-         * Пробуем запустить HTTP-сервер
+         * Запускаем HTTP-сервер асинхронно, чтобы можно было использовать и асинхронные задачи, и обработчик команд
          *
          * В случае неудачи - завершаем работу бота
          */
@@ -236,6 +236,10 @@ final class Main
             $this->sga->Set(["exitCode"], 255);
             $this->bot->Shutdown();
         }
+
+        /**
+         * Запускаем обработчик ввода команд.
+         */
         $this->StartCommandHandler();
     }
 
@@ -350,7 +354,6 @@ final class Main
             $this->sl->CloseLogger();
         }
         $exitCode = $this->sga->Get(["exitCode"]);
-        if (!IS_WINDOWS) FileDirectory::Delete(Application::GetExecutableDirectory() . "server.lock");
         exit($exitCode);
     }
 
@@ -451,12 +454,13 @@ final class Main
         );
     }
 
-    public function UpdateTitle() : void
+    public function UpdateTitle(AsyncTask $task, NoAsyncTaskParameters $params) : void
     {
         $title = $this->timestart > 0 ? $this->UpdateTitleStarted() : $this->UpdateTitleNotStarted();
         if ($this->title != $title)
         {
             $this->title = $title;
+
             Application::SetTitle($title);
         }
     }
@@ -566,61 +570,6 @@ final class Main
                 cmm::w("request.threatdetected", [$request->RemoteAddress]);
                 $this->bot->GetLogger()->Warn($request->RequestUri);
                 return;
-            }
-        }
-        $input = "";
-        if ($request->RequestUri == "/cmd" && in_array($request->RemoteAddress, $AllowedAddresses))
-        {
-            if ($data["first"] && $this->cmdPid == -1)
-            {
-                $this->cmdPid = $data["pid"];
-                $this->cmdNextKey = md5(time() . " " . rand(-100, 100) . md5(rand(-100, 100) . SystemConfig::Get("server_addr")));
-                $response->End($this->cmdNextKey);
-                return;
-            }
-            else if (!$data["first"] && $this->cmdPid != $data["pid"])
-            {
-                $response->End("fail");
-                return;
-            }
-            else if (!$data["first"] && $data["key"] != $this->cmdNextKey)
-            {
-                $response->End("fail");
-                return;
-            }
-            else if (!$data["first"] && $data["key"] == $this->cmdNextKey && $data["pid"] == $this->cmdPid)
-            {
-                $this->cmdNextKey = md5(time() . " " . rand(-100, 100) . md5(rand(-100, 100) . SystemConfig::Get("server_addr")));
-                $input1 = explode(' ', $data["cmd"]);
-                $commandName = $input1[0];
-                array_shift($input1);
-                $command = new Command($commandName, $input1, self::GetConsoleAsUser(), 0);
-                $_event = new CommandPreProcessEvent($command, true, 0);
-                $this->newMessage->OnCommandPreProcess($_event);
-                if (!$_event->IsCancelled())
-                {
-                    $this->commandHandler->OnCommand($command);
-                }
-                $response->End($this->cmdNextKey);
-                return;
-            }
-            else
-            {
-                $response->End("fail");
-                return;
-            }
-        }
-        if ($input != "")
-        {
-            $input1 = explode(' ', $input);
-            $commandName = $input1[0];
-            array_shift($input1);
-            $command = new Command($commandName, $input1, self::GetConsoleAsUser(), 0);
-            $_event = new CommandPreProcessEvent($command, true, 0);
-            $this->newMessage->OnCommandPreProcess($_event);
-            if (!$_event->IsCancelled())
-            {
-                $this->commandHandler->OnCommand($command);
             }
         }
         $response->Header("Content-Type", "text/plain");
@@ -886,21 +835,21 @@ final class Main
             fwrite($f, json_encode($this->config, JSON_PRETTY_PRINT));
             fclose($f);
         }
-        if (strlen($this->config["access_token"]) != 85)
+        /*if (strlen($this->config["access_token"]) != 85)
         {
             cmm::e("config.accesstoken");
             $somethingWrong = true;
-        }
+        }*/
         if (intval($this->config["group_id"]) < 1)
         {
             cmm::e("config.groupid");
             $somethingWrong = true;
         }
-        if (strlen($this->config["main_admin_access_token"]) != 85)
+        /*if (strlen($this->config["main_admin_access_token"]) != 85)
         {
             cmm::e("config.mainadminaccesstoken");
             $somethingWrong = true;
-        }
+        }*/
         if ($somethingWrong)
         {
             cmm::w("config.somethingwrong");
