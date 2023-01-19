@@ -141,10 +141,10 @@ final class Main
         $this->userCache = new UserCache($this);
 
         // логгер-мастер
-        $this->sl = new SystemLogger($colorsEnabled); 
+        $this->sl = new SystemLogger($colorsEnabled);
 
         // логгер бота
-        $this->logger = new Logger("", $this->sl); 
+        $this->logger = new Logger("", $this->sl);
 
         $this->updater = new Updater($this, $this->logger, $this->sl);
 

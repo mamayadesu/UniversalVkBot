@@ -41,7 +41,7 @@ class Photo extends Attachment
     public function __construct(array $sourceData)
     {
         parent::__construct($sourceData, AttachmentTypes::PHOTO);
-        $keys = ["text", "sizes", "id", "owner_id", "has_tags", "album_id"];
+        $keys = ["text", "sizes", "id", "owner_id", "album_id"];
         $noKeys = [];
         foreach ($keys as $key)
         {
@@ -64,9 +64,9 @@ class Photo extends Attachment
         {
             throw new Exception("\\uvb\\Models\\Attachments\\Photo\\Photo: Invalid source data. Album ID must be an integer, " . gettype($sourceData["album_id"] . " given"));
         }
-        if (!is_bool($sourceData["has_tags"]))
+        if (isset($sourceData["has_tags"]) && !is_bool($sourceData["has_tags"]))
         {
-            throw new Exception("\\uvb\\Models\\Attachments\\Photo\\Photo: Invalid source data. Album ID must be an integer, " . gettype($sourceData["album_id"] . " given"));
+            throw new Exception("\\uvb\\Models\\Attachments\\Photo\\Photo: Invalid source data. Has tags must be a bool, " . gettype($sourceData["has_tags"] . " given"));
         }
         if (!is_string($sourceData["text"]))
         {
@@ -86,7 +86,7 @@ class Photo extends Attachment
             $this->sizes[] = $size;
         }
         $this->albumId = $sourceData["album_id"];
-        $this->_hasTags = $sourceData["has_tags"];
+        $this->_hasTags = $sourceData["has_tags"] ?? false;
         $this->text = $sourceData["text"];
     }
 

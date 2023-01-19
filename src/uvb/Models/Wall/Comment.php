@@ -3,8 +3,15 @@ declare(ticks = 1);
 
 namespace uvb\Models\Wall;
 
+use Exception;
+use uvb\Bot;
 use uvb\Models\Attachments\Attachment;
 use uvb\Models\Entity;
+use uvb\Models\Group;
+use uvb\Models\User;
+use uvb\System\SystemConfig;
+use uvb\Utils\AttachmentParser;
+use VK\Actions\Wall as VkApiWall;
 
 /**
  * Модель, описывающая комментарий к посту
@@ -14,12 +21,12 @@ final class Comment
     /**
      * @ignore
      */
-    private int $Id, $Date;
+    private int $Id, $Date, $OwnerId;
 
     /**
      * @ignore
      */
-    private ?Entity $From = null;
+    private ?Entity $From = null, $Owner = null;
 
     /**
      * @ignore
@@ -34,7 +41,7 @@ final class Comment
     /**
      * @ignore
      */
-    private ?Comment $ReplyToComment = null;
+    private array $ChildComments = [];
 
     /**
      * @var array<Attachment>
@@ -42,19 +49,24 @@ final class Comment
      */
     private array/*<Attachment>*/ $Attachments = array();
 
-    public function __construct(int $Id, int $Date, ?Entity $From, string $Text, array $Attachments, ?Entity $ReplyTo, ?Comment $ReplyToComment)
+    /**
+     * @ignore
+     */
+    public function __construct(int $Id, int $OwnerId, int $Date, ?Entity $From, string $Text, array $Attachments, ?Entity $ReplyTo, array $ChildComments)
     {
         $this->Id = $Id;
         $this->Date = $Date;
         $this->From = $From;
         $this->Text = $Text;
+        $this->OwnerId = $OwnerId;
+        $this->Owner = $this->OwnerId < 0 ? Group::Get($this->OwnerId) : User::Get($this->OwnerId);
         foreach ($Attachments as $key => $value)
-        {if(!$value instanceof Attachment)continue;
-            $this->Attachments[] = $value;
+        {
+            $this->Attachments[] = AttachmentParser::Parse($value);
         }
 
         $this->ReplyTo = $ReplyTo;
-        $this->ReplyToComment = $ReplyToComment;
+        $this->ChildComments = $ChildComments;
     }
 
     /**
@@ -98,18 +110,56 @@ final class Comment
     }
 
     /**
-     * @return Comment|null Комментарий, на который был дан ответ (текущий комментарий), если данный комментарий является ответом
+     * @return Comment[] Возвращает список дочерних комментариев
      */
-    public function GetReplyToComment() : ?Comment
+    public function GetChildComments() : array
     {
-        return $this->ReplyToComment;
+        return $this->ChildComments;
     }
 
     /**
-     * @return array|Attachment[] Вложения
+     * @return Attachment[] Вложения
      */
     public function GetAttachments() : array/*<Attachment>*/
     {
         return $this->Attachments;
+    }
+
+    /**
+     * Удалить комментарий
+     *
+     * @return void
+     * @throws Exception Не поддерживается для стен пользователей
+     */
+    public function Delete() : void
+    {
+        $wall = self::GetApi();
+
+        if ($this->Owner instanceof User)
+            throw new Exception("Not supported for users");
+
+        $owner_id = -(abs($this->Owner->GetVkId()));
+
+        $wall_deleteCommentParams = array(
+            "owner_id" => $owner_id,
+            "comment_id" => $this->Id
+        );
+
+        try
+        {
+            $wall->deleteComment(SystemConfig::Get("main_admin_access_token"), $wall_deleteCommentParams);
+        }
+        catch (Exception $e)
+        {
+            Bot::GetInstance()->GetLogger()->Error("(comment" . $owner_id . "_" . $this->Id .")->Delete(): " . $e->getMessage());
+        }
+    }
+
+    /**
+     * @ignore
+     */
+    private static function GetApi() : VkApiWall
+    {
+        return Bot::GetVkApi()->wall();
     }
 }

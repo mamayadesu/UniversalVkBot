@@ -5,6 +5,7 @@ namespace uvb\Models;
 
 use \Exception;
 use uvb\Bot;
+use uvb\Models\Wall\Wall;
 use uvb\System\SystemConfig;
 use uvb\Services\UserCache;
 use VK\Actions\Groups;
@@ -34,6 +35,11 @@ final class Group implements Entity
      * @ignore
      */
     private static ?Group $instance = null;
+
+    /**
+     * @ignore
+     */
+    private Wall $GroupWall;
 
     /**
      * Не используйте конструктор этого класса! Используйте статический метод GetGroup(int $id)
@@ -67,6 +73,15 @@ final class Group implements Entity
         $this->GroupName = $response["name"];
         $this->GroupAccessType = $response["is_closed"];
         $this->Domain = $response["screen_name"];
+        $this->GroupWall = new Wall($GroupId);
+    }
+
+    /**
+     * @return Wall Стена сообщества
+     */
+    public function GetWall() : Wall
+    {
+        return $this->GroupWall;
     }
 
     /**
@@ -96,12 +111,12 @@ final class Group implements Entity
     /**
      * Получить экземпляр группы, указанной в конфиге
      *
-     * @param int $id Идентификатор сообщества. Не указывайте или укажите 0, если нужно получить объект сообщества, указанного в конфиге. Положительность числа не имеет значения. Оно автоматически преобразуется
+     * @param int $vkId Идентификатор сообщества. Не указывайте или укажите 0, если нужно получить объект сообщества, указанного в конфиге. Положительность числа не имеет значения. Оно автоматически преобразуется
      * @return Group
      */
-    public static function Get($id = 0) : Group
+    public static function Get(int $vkId = 0) : Group
     {
-        $id = abs($id);
+        $id = abs($vkId);
         if ($id == 0)
         {
             if (self::$instance == null)

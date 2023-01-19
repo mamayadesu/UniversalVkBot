@@ -575,6 +575,25 @@ final class User implements Entity
         return $result;
     }
 
+    public static function ParseVkProfile(array $profile) : User
+    {
+        return new User(
+            $profile["id"],
+            array(
+                "nom" => $profile["first_name"]
+            ),
+            array(
+                "nom" => $profile["last_name"]
+            ),
+            $profile["sex"] ?? UserSex::UNKNOWN,
+            $profile["bdate"] ?? "",
+            $profile["city"] ? $profile["city"]["title"] : "",
+            $profile["county"] ? $profile["country"]["title"] : "",
+            $profile["domain"] ?? "",
+            $profile["status"] ?? ""
+        );
+    }
+
     /**
      * @ignore
      */
