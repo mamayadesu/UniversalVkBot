@@ -8,11 +8,11 @@ use uvb\Models\User;
 use uvb\Events\Event;
 
 /**
- * Событие. Бот был добавлен в беседу
+ * Событие. Бот был исключён из беседы
  * @package uvb\Events\Messages
  */
 
-class BotJoinEvent extends Event
+class BotLeftEvent extends Event
 {
     /**
      * @ignore
@@ -40,7 +40,7 @@ class BotJoinEvent extends Event
     }
 
     /**
-     * Получить пользователя, который добавил бота в беседу
+     * Получить пользователя, который исключил бота из беседы
      *
      * @return User Объект пользователя
      */

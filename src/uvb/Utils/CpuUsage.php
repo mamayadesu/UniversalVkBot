@@ -48,12 +48,20 @@ class CpuUsage
     }
 
     /**
+     * @return bool Запущена ли данная служба
+     */
+    public static function IsRunning() : bool
+    {
+        return self::$instance !== null;
+    }
+
+    /**
      * @return float Процент использования CPU. Работает только Linux-системах. Для Windows этот метод всегда возвращает ноль.
      */
     public static function GetValue() : float
     {
-        $me = self::$instance;
         if (IS_WINDOWS) return 0;
+        $me = self::$instance;
         $time = intval(microtime(true) * 1000);
         if ($time >= $me->lastCpuChecked + 100)
         {

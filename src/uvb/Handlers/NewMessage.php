@@ -7,6 +7,7 @@ use uvb\Bot;
 use uvb\cmm;
 use uvb\Events\CommandPreProcessEvent;
 use uvb\Events\Messages\BotJoinEvent;
+use uvb\Events\Messages\BotLeftEvent;
 use uvb\Events\Messages\UserAddEvent;
 use uvb\Events\Messages\UserJoinEvent;
 use uvb\Events\Messages\UserKickEvent;
@@ -180,6 +181,28 @@ class NewMessage
             catch (Throwable $e)
             {
                 cmm::c("exception.botjoin", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                CrashHandler::Handle($e, $plugin);
+                $plugin->DisablePlugin();
+            }
+        }
+    }
+
+    public function OnBotLeft(BotLeftEvent $event) : void
+    {
+        $plugins = $this->main->pluginManager->GetPlugins();
+        foreach ($plugins as $plugin)
+        {if(!$plugin instanceof Plugin)continue;
+            if ($event->IsCancelled())
+            {
+                break;
+            }
+            try
+            {
+                $plugin->OnBotLeft($event);
+            }
+            catch (Throwable $e)
+            {
+                cmm::c("exception.botleft", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                 CrashHandler::Handle($e, $plugin);
                 $plugin->DisablePlugin();
             }

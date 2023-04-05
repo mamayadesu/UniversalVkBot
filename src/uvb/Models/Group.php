@@ -111,28 +111,15 @@ final class Group implements Entity
     /**
      * Получить экземпляр группы, указанной в конфиге
      *
-     * @param int $vkId Идентификатор сообщества. Не указывайте или укажите 0, если нужно получить объект сообщества, указанного в конфиге. Положительность числа не имеет значения. Оно автоматически преобразуется
+     * @param int $vkId Идентификатор сообщества. Положительность числа не имеет значения. Оно автоматически преобразуется
      * @return Group
      */
-    public static function Get(int $vkId = 0) : Group
+    public static function Get(int $vkId) : Group
     {
         $id = abs($vkId);
-        if ($id == 0)
+        if (!isset(self::$LoadedGroups[$id]))
         {
-            if (self::$instance == null)
-            {
-                $id = intval(SystemConfig::Get("group_id"));
-                self::$instance = new Group($id);
-                self::$LoadedGroups[$id] = self::$instance;
-            }
-            return self::$instance;
-        }
-        else
-        {
-            if (!isset(self::$LoadedGroups[$id]))
-            {
-                self::$LoadedGroups[$id] = new Group($id);
-            }
+            self::$LoadedGroups[$id] = new Group($id);
         }
         return self::$LoadedGroups[$id];
     }

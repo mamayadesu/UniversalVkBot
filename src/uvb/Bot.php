@@ -22,6 +22,8 @@ use VK\Client\VKApiClient;
 
 final class Bot
 {
+    const REQUEST_URI = "";
+
     /**
      * @ignore
      */
@@ -257,9 +259,9 @@ final class Bot
      */
     public function Shutdown() : void
     {
-        if ($this->main->sga->Get(["exitCode"]) != 255)
+        if ($this->main->exitCode != 255)
         {
-            $this->main->sga->Set(["exitCode"], 0);
+            $this->main->exitCode = 0;
         }
         $this->ProcStopper();
     }
@@ -269,7 +271,7 @@ final class Bot
      */
     public function Reboot() : void
     {
-        $this->main->sga->Set(["exitCode"], 2);
+        $this->main->exitCode = 2;
         $this->ProcStopper();
     }
 
@@ -283,7 +285,7 @@ final class Bot
             return;
         }
 
-        $this->main->sga->Set(["exitCode"], 3);
+        $this->main->exitCode = 3;
         $this->ProcStopper();
     }
 
@@ -297,7 +299,11 @@ final class Bot
             return;
         }
         $this->isShuttingDown = true;
-        $exitCode = $this->main->sga->Get(["exitCode"]);
+        if ($this->main->resourcesWatcher !== null)
+        {
+            $this->main->resourcesWatcher->ShutdownTasks();
+        }
+        $exitCode = $this->main->exitCode;
         if ($exitCode == 0)
         {
             cmm::l("bot.shuttingdown");

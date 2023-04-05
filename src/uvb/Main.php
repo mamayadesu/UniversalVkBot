@@ -21,6 +21,7 @@ use uvb\Events\CommandPreProcessEvent;
 use uvb\Events\InGroupUserAction\UserJoinGroupEvent;
 use uvb\Events\InGroupUserAction\UserLeftGroupEvent;
 use uvb\Events\Messages\BotJoinEvent;
+use uvb\Events\Messages\BotLeftEvent;
 use uvb\Events\Messages\NewConversationMessageEvent;
 use uvb\Events\Messages\NewPrivateMessageEvent;
 use uvb\Events\Messages\UserAddEvent;
@@ -35,6 +36,7 @@ use uvb\Models\Attachments\AttachmentTypes;
 use uvb\Models\Command;
 use uvb\Models\Entity;
 use uvb\Models\Geolocation;
+use uvb\Models\Group;
 use uvb\Models\Message;
 use uvb\Models\User;
 use uvb\Models\UserSex;
@@ -43,6 +45,7 @@ use uvb\Plugin\Plugin;
 use uvb\Plugin\PluginManager;
 use uvb\Protection\AddressBlocker;
 use uvb\Services\RamController;
+use uvb\Services\ResourcesWatcher;
 use uvb\Services\UserCache;
 use uvb\System\CrashHandler;
 use uvb\System\SystemConfigResource;
@@ -98,6 +101,8 @@ final class Main
     private Logger $logger;
     public Updater $updater;
     public RamController $ramController;
+    public ?ResourcesWatcher $resourcesWatcher = null;
+    public int $exitCode;
 
     public function __construct(array $args)
     {
@@ -115,10 +120,10 @@ final class Main
             exit(0);
         }
 
-        $this->sga = SuperGlobalArray::GetInstance();
-        new CpuUsage();
         if (!IS_WINDOWS)
         {
+            new CpuUsage();
+            $this->sga = SuperGlobalArray::GetInstance();
             $this->sga->Set(["cpu_usage"], 0);
 
             // запускаем параллельный класс, который будет чекать потребление ЦПУ
@@ -128,7 +133,7 @@ final class Main
         gc_enable();
         self::$mainInitialized = true;
         $this->mt_start = microtime(true);
-        $this->sga->Set(["exitCode"], 0);
+        $this->exitCode = 0;
 
         $pargs = Application::ParseArguments($args, "--");
         $colorsEnabled = true;
@@ -191,13 +196,13 @@ final class Main
         $this->server = new Server(SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")); 
         $this->server->On("start", function(Server $server) { $this->Server_Start($server);}); 
         $this->server->On("shutdown", function(Server $server) { $this->Server_Stop($server);}); 
-        $this->server->On("request", function(Request $request, Response $response)
+        $this->server->On("request", function(Request $request, Response $response, Server $server)
         {
             // в случае какой-то необработанно ошибки, кидаем 500 ошибку,
             // чтобы клиент не ждал бесконечное количество лет
             try
             {
-                $this->Server_Request($request, $response);
+                $this->Server_Request($request, $response, $server);
             }
             catch (Throwable $e)
             {
@@ -233,7 +238,7 @@ final class Main
         {
             $this->logger->Critical("Unhandled " . get_class($e) . " \"" . $e->getMessage() . "\" in " . $e->getFile() . " on line " . $e->getLine());
             CrashHandler::Handle($e);
-            $this->sga->Set(["exitCode"], 255);
+            $this->exitCode = 255;
             $this->bot->Shutdown();
         }
 
@@ -349,20 +354,19 @@ final class Main
     private function Server_Stop(Server $server) : void
     {
         cmm::l("http.shuttingdown");
-        if ($this->sga->Get(["exitCode"]) != 3)
+        if ($this->exitCode != 3)
         {
             $this->sl->CloseLogger();
         }
-        $exitCode = $this->sga->Get(["exitCode"]);
-        exit($exitCode);
+        exit($this->exitCode);
     }
 
     // продолжаем запуск бота
     private function Server_Start(Server $server) : void
     {
         cmm::l("http.addr", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")]);
-        cmm::l("http.uri", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port"), SystemConfig::Get("requests_uri")]);
-
+        cmm::l("http.uri", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port"), Bot::REQUEST_URI]);
+        $this->resourcesWatcher = new ResourcesWatcher();
         $this->api = new VKApiClient();
         $this->newMessage = new NewMessage($this); 
         $this->commandHandler = new CommandHandler($this); 
@@ -530,7 +534,7 @@ final class Main
         return self::$consoleUser;
     }
 
-    private function Server_Request(Request $request, Response $response) : void
+    private function Server_Request(Request $request, Response $response, Server $server) : void
     {
         if ($this->bot->IsShuttingDown())
         {
@@ -574,28 +578,22 @@ final class Main
         }
         $response->Header("Content-Type", "text/plain");
 
-        if ($request->RequestUri != "/" . SystemConfig::Get("requests_uri"))
+        if ($request->RequestUri != "/" . Bot::REQUEST_URI)
         {
-            $this->bot->GetLogger()->Error("*******************");
+            /*$this->bot->GetLogger()->Error("*******************");
             cmm::e("request.wronguri", [$request->RequestUri]);
             $this->bot->GetLogger()->Error($request->GetRawContent());
-            $this->bot->GetLogger()->Error($request->RemoteAddress);
+            $this->bot->GetLogger()->Error($request->RemoteAddress);*/
             $response->End("Wrong URI");
-            $this->bot->GetLogger()->Error("*******************");
+            /*$this->bot->GetLogger()->Error("*******************");*/
             return;
         }
 
         if ($data == null)
         {
-            cmm::e("request.incorrectdata");
-            $this->bot->GetLogger()->Error($request->GetRawContent());
+            /*cmm::e("request.incorrectdata");
+            $this->bot->GetLogger()->Error($request->GetRawContent());*/
             $response->End("Bad request");
-            return;
-        }
-        if (!isset($data["group_id"]) || $data["group_id"] != SystemConfig::Get("group_id"))
-        {
-            cmm::w("request.invalidgroup");
-            $response->End("Invalid group");
             return;
         }
         if (!isset($data["secret"]) || $data["secret"] != SystemConfig::Get("secret_key"))
@@ -622,6 +620,16 @@ final class Main
             $obj = array();
             $event = null;
             $response->End("ok");
+            /*
+             * // debug
+             */
+            $myvar = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $myfile = fopen(Application::GetExecutableDirectory() . "test.json", "w");
+            fwrite($myfile, $myvar);
+            fclose($myfile);
+            /*
+             * ################
+             */
             switch ($data["type"])
             {
                 case "message_new":
@@ -636,17 +644,6 @@ final class Main
                     $attachments = [];
                     $attachment = null;
                     $geolocation = null;
-
-                    /*
-                     * #dev
-                     */
-                    $myvar = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                    $myfile = fopen(Application::GetExecutableDirectory() . "test.json", "w");
-                    fwrite($myfile, $myvar);
-                    fclose($myfile);
-                    /*
-                     * ################
-                     */
 
                     foreach ($attachments1 as $attachment1)
                     {
@@ -672,9 +669,9 @@ final class Main
                     {
                         if ($obj["action"]["type"] == "chat_invite_user")
                         {
-                            if (-$obj["action"]["member_id"] == SystemConfig::Get("group_id"))
+                            if ($obj["action"]["member_id"] < 0)
                             {
-                                $event = new BotJoinEvent($from, $peer_id);
+                                $event = new BotJoinEvent($from, Group::Get($obj["action"]["member_id"]), $peer_id);
                                 $this->newMessage->OnBotJoin($event);
                             }
                             else if ($obj["action"]["member_id"] > 0 && $obj["action"]["member_id"] != $fromId)
@@ -690,7 +687,7 @@ final class Main
                         }
                         else if ($obj["action"]["type"] == "chat_kick_user")
                         {
-                            if ($obj["action"]["member_id"] > 0 && -$fromId != SystemConfig::Get("group_id"))
+                            if ($obj["action"]["member_id"] > 0)
                             {
                                 if ($obj["action"]["member_id"] != $fromId)
                                 {
@@ -703,13 +700,18 @@ final class Main
                                     $this->newMessage->OnUserLeft($event);
                                 }
                             }
+                            else if ($obj["action"]["member_id"] < 0)
+                            {
+                                $event = new BotLeftEvent($from, Group::Get($obj["action"]["member_id"]), $peer_id);
+                                $this->newMessage->OnBotLeft($event);
+                            }
                         }
                         break;
                     }
 
                     try
                     {
-                        $inboxMsg = new Message($msgid, $date, $from, $text, $peer_id, $attachments, $conversation_message_id, $geolocation);
+                        $inboxMsg = new Message($msgid, $date, $from, Group::Get($data["group_id"]), $text, $peer_id, $attachments, $conversation_message_id, $geolocation);
                     }
                     catch (\Exception $e)
                     {
@@ -767,6 +769,7 @@ final class Main
                 case "group_join":
                     $obj = $data["object"];
                     $user = User::Get($obj["user_id"]);
+                    $group = Group::Get($data["group_id"]);
                     $__join = false;
                     $__request = false;
                     $__approved = false;
@@ -784,15 +787,16 @@ final class Main
                             $__approved = true;
                             break;
                     }
-                    $event = new UserJoinGroupEvent($user, $__join, $__request, $__approved);
+                    $event = new UserJoinGroupEvent($user, $group, $__join, $__request, $__approved);
                     $this->inGroupUserAction->OnUserJoinGroup($event);
                     break;
 
                 case "group_leave":
                     $obj = $data["object"];
                     $user = User::Get($obj["user_id"]);
+                    $group = Group::Get($data["group_id"]);
                     $leftBySelf = $obj["self"] == 1;
-                    $event = new UserLeftGroupEvent($user, $leftBySelf);
+                    $event = new UserLeftGroupEvent($user, $group, $leftBySelf);
                     $this->inGroupUserAction->OnUserLeftGroup($event);
                     break;
 
@@ -840,11 +844,11 @@ final class Main
             cmm::e("config.accesstoken");
             $somethingWrong = true;
         }*/
-        if (intval($this->config["group_id"]) < 1)
+        /*if (intval($this->config["group_id"]) < 1)
         {
             cmm::e("config.groupid");
             $somethingWrong = true;
-        }
+        }*/
         /*if (strlen($this->config["main_admin_access_token"]) != 85)
         {
             cmm::e("config.mainadminaccesstoken");
@@ -865,10 +869,8 @@ final class Main
         (
             "access_token" => "",
             "main_admin_access_token" => "",
-            "group_id" => -1,
             "server_addr" => "0.0.0.0",
             "server_port" => 80,
-            "requests_uri" => "request",
             "secret_key" => "",
             "admins" => [
 

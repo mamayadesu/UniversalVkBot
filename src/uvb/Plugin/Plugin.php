@@ -10,6 +10,7 @@ use uvb\Events\CommandPreProcessEvent;
 use uvb\Events\InGroupUserAction\UserJoinGroupEvent;
 use uvb\Events\InGroupUserAction\UserLeftGroupEvent;
 use uvb\Events\Messages\BotJoinEvent;
+use uvb\Events\Messages\BotLeftEvent;
 use uvb\Events\Messages\UserAddEvent;
 use uvb\Events\Messages\UserJoinEvent;
 use uvb\Events\Messages\UserKickEvent;
@@ -320,6 +321,17 @@ abstract class Plugin
      * @param BotJoinEvent $event Объект, описывающий событие
      */
     public function OnBotJoin(BotJoinEvent $event) : void
+    {
+
+    }
+
+    /**
+     * Событие. Бот был исключён из беседы.
+     * Неотменяемое
+     *
+     * @param BotLeftEvent $event Объект, описывающий событие
+     */
+    public function OnBotLeft(BotLeftEvent $event) : void
     {
 
     }

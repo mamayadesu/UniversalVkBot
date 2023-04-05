@@ -22,18 +22,24 @@ class UserJoinGroupEvent extends Event
     /**
      * @ignore
      */
+    private Group $group;
+
+    /**
+     * @ignore
+     */
     private bool $join, $request, $approved;
 
     /**
      * @ignore
      */
-    public function __construct(User $user, bool $join, bool $request, bool $approved)
+    public function __construct(User $user, Group $group, bool $join, bool $request, bool $approved)
     {
         $this->user = $user;
         $this->join = $join;
         $this->request = $request;
         $this->approved = $approved;
         $this->isCancellable = true;
+        $this->group = $group;
     }
 
     /**
@@ -87,6 +93,16 @@ class UserJoinGroupEvent extends Event
             return;
         }
 
-        $this->cancelled = Group::Get()->KickMember($this->user);
+        $this->cancelled = Group::Get(1)->KickMember($this->user);
+    }
+
+    /**
+     * Возвращает объект группы, в которую вступили/подали заявку/одобрили заявку на вступление
+     *
+     * @return Group
+     */
+    public function GetGroup() : Group
+    {
+        return $this->group;
     }
 }

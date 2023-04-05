@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Events\InGroupUserAction;
 
 use uvb\Events\Event;
+use uvb\Models\Group;
 use uvb\Models\User;
 
 /**
@@ -21,15 +22,21 @@ class UserLeftGroupEvent extends Event
     /**
      * @ignore
      */
+    private Group $group;
+
+    /**
+     * @ignore
+     */
     private bool $leftBySelf;
 
     /**
      * @ignore
      */
-    public function __construct(User $user, bool $leftBySelf)
+    public function __construct(User $user, Group $group, bool $leftBySelf)
     {
         $this->user = $user;
         $this->leftBySelf = $leftBySelf;
+        $this->group = $group;
     }
 
     /**
@@ -50,5 +57,15 @@ class UserLeftGroupEvent extends Event
     public function LeftBySelf() : bool
     {
         return $this->leftBySelf;
+    }
+
+    /**
+     * Возвращает объект группы, из которой вышли или исключили
+     *
+     * @return Group
+     */
+    public function GetGroup() : Group
+    {
+        return $this->group;
     }
 }

@@ -47,6 +47,11 @@ final class Message
     /**
      * @ignore
      */
+    private Group $Group;
+
+    /**
+     * @ignore
+     */
     private string $Text;
 
     /**
@@ -62,7 +67,7 @@ final class Message
     /**
      * @ignore
      */
-    public function __construct(int $MessageId, int $Date, User $From, string $Text, int $PeerId, array/*<Attachment>*/ $Attachments, int $ConversationMessageId, Geolocation $geolocation = null)
+    public function __construct(int $MessageId, int $Date, User $From, Group $group, string $Text, int $PeerId, array/*<Attachment>*/ $Attachments, int $ConversationMessageId, Geolocation $geolocation = null)
     {
         $this->MessageId = $MessageId;
         $this->ConversationMessageId = $ConversationMessageId;
@@ -71,6 +76,7 @@ final class Message
         $this->Text = $Text;
         $this->PeerId = $PeerId;
         $this->Geolocation = $geolocation;
+        $this->Group = $group;
 
         $newArr = [];
         for ($i = 0; $i < count($Attachments); $i++)
@@ -110,6 +116,14 @@ final class Message
     public function GetFrom() : User
     {
         return $this->From;
+    }
+
+    /**
+     * @return Group Группа, в личные сообщения которой написали
+     */
+    public function GetGroup() : Group
+    {
+        return $this->Group;
     }
 
     /**
@@ -242,62 +256,7 @@ final class Message
         {
             $params["attachment"] = implode(',', $attachments);
         }
-        try
-        {
-            self::GetApi()->send(SystemConfig::Get("access_token"), $params);
-        }
-        catch (VKApiMessagesCantFwdException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesChatBotFeatureException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesChatUserNoAccessException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesContactNotFoundException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesDenySendException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesKeyboardInvalidException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesPrivacyException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesTooLongForwardsException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesTooLongMessageException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesTooManyPostsException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesUserBlockedException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiException $e)
-        {
-            throw $e;
-        }
-        catch (VKClientException $e)
-        {
-            throw $e;
-        }
+        self::GetApi()->send(SystemConfig::Get("access_token"), $params);
     }
 
     /**
@@ -332,62 +291,7 @@ final class Message
      */
     public static function Send(string $message, User $user, array $attachments, ?BotKeyboard $keyboard = null, ?Geolocation $geolocation = null) : void
     {
-        try
-        {
-            self::Mailing($message, [$user], $attachments, $keyboard = null, $geolocation);
-        }
-        catch (VKApiMessagesCantFwdException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesChatBotFeatureException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesChatUserNoAccessException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesContactNotFoundException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesDenySendException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesKeyboardInvalidException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesPrivacyException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesTooLongForwardsException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesTooLongMessageException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesTooManyPostsException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesUserBlockedException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiException $e)
-        {
-            throw $e;
-        }
-        catch (VKClientException $e)
-        {
-            throw $e;
-        }
+        self::Mailing($message, [$user], $attachments, $keyboard = null, $geolocation);
     }
 
     /**
@@ -497,61 +401,6 @@ final class Message
             $params["lat"] = $geolocation->Latitude;
             $params["long"] = $geolocation->Longitude;
         }
-        try
-        {
-            self::GetApi()->send(SystemConfig::Get("access_token"), $params);
-        }
-        catch (VKApiMessagesCantFwdException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesChatBotFeatureException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesChatUserNoAccessException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesContactNotFoundException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesDenySendException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesKeyboardInvalidException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesPrivacyException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesTooLongForwardsException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesTooLongMessageException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesTooManyPostsException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiMessagesUserBlockedException $e)
-        {
-            throw $e;
-        }
-        catch (VKApiException $e)
-        {
-            throw $e;
-        }
-        catch (VKClientException $e)
-        {
-            throw $e;
-        }
+        self::GetApi()->send(SystemConfig::Get("access_token"), $params);
     }
 }
