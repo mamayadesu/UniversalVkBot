@@ -511,7 +511,7 @@ class PluginManager
         $commands = $this->main->commandManager->GetRegisteredPrivateCommands();
         foreach ($commands as $cmd)
         {if (!$cmd instanceof CommandInfo) continue;
-            if ($cmd->GetOwner() == $plugin)
+            if ($cmd->GetOwner() === $plugin)
             {
                 $this->main->commandManager->UnregisterPrivateCommand($cmd->GetCommandName(), $cmd->GetOwner()); 
             }
@@ -521,7 +521,7 @@ class PluginManager
         foreach ($commands as $cmd)
         {if (!$cmd instanceof CommandInfo) continue;
             
-            if ($cmd->GetOwner() == $plugin)
+            if ($cmd->GetOwner() === $plugin)
             {
                 $this->main->commandManager->UnregisterConversationCommand($cmd->GetCommandName(), $cmd->GetOwner()); 
             }
