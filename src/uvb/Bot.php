@@ -6,12 +6,14 @@ namespace uvb;
 use Application\Application;
 use uvb\Events\CommandPreProcessEvent;
 use uvb\Models\Command;
+use uvb\Models\Group;
 use uvb\Models\User;
 use uvb\Plugin\CommandManager;
 use uvb\Plugin\PluginManager;
 use uvb\Protection\AddressBlocker;
 use uvb\Services\RamController;
 use uvb\Services\UserCache;
+use uvb\System\SystemConfig;
 use uvb\Utils\CpuUsage;
 use VK\Client\VKApiClient;
 
@@ -235,13 +237,33 @@ final class Bot
         {
             $args[] = $arg;
         }
+        $group = $this->GetDefaultGroup();
         $command = new Command($commandName, $args, $user, 0);
-        $_event = new CommandPreProcessEvent($command, true, 0);
+        $_event = new CommandPreProcessEvent($group, $command, true, 0);
         $this->main->newMessage->OnCommandPreProcess($_event);
         if (!$_event->IsCancelled())
         {
-            $this->main->commandHandler->OnCommand($command);
+            $this->main->commandHandler->OnCommand($command, $group);
         }
+    }
+
+    /**
+     * Получить группу по умолчанию. Группа по умолчанию - это первая в списке группа в config.json в параметре groups_to_access_tokens
+     *
+     * @return Group
+     */
+    public function GetDefaultGroup() : Group
+    {
+        $groups = SystemConfig::Get("groups_to_access_tokens");
+
+        $group_id = 0;
+        foreach ($groups as $group => $access_token)
+        {
+            $group_id = intval(str_replace("club", "", $group));
+            break;
+        }
+
+        return Group::Get($group_id);
     }
 
     /**

@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Events\Messages;
 
 use uvb\Events\Event;
+use uvb\Models\Group;
 use uvb\Models\Message;
 
 /**
@@ -31,12 +32,13 @@ class NewConversationMessageEvent extends Event
     /**
      * @ignore
      */
-    public function __construct(Message $inboxMessage, int $conversationId, string $rawData)
+    public function __construct(Group $group, Message $inboxMessage, int $conversationId, string $rawData)
     {
         $this->inboxMessage = $inboxMessage;
         $this->conversationId = $conversationId;
         $this->rawData = $rawData;
         $this->isCancellable = true;
+        parent::__construct($group);
     }
 
     /**

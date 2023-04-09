@@ -17,9 +17,10 @@ use VK\Client\VKApiClient;
 final class Group implements Entity
 {
     /**
+     * @var array<int, Group>
      * @ignore
      */
-    private static array/*<int, Group>*/ $LoadedGroups = [];
+    private static array $LoadedGroups = [];
 
     /**
      * @ignore
@@ -150,7 +151,7 @@ final class Group implements Entity
         {
             try
             {
-                $members = $groups->getMembers(SystemConfig::Get("access_token"), $groups_getMembersParams);
+                $members = $groups->getMembers($this->GetAccessToken(), $groups_getMembersParams);
             }
             catch (Exception $e)
             {
@@ -206,6 +207,22 @@ final class Group implements Entity
             return false;
         }
         return true;
+    }
+
+    /**
+     * Возвращает access-token данной группы, если он заполнен в config.json. В противном случае будет возвращено NULL
+     *
+     * @return string|null
+     */
+    public function GetAccessToken() : ?string
+    {
+        $group_in_config = "club" . $this->GroupId;
+
+        if (isset(SystemConfig::Get("groups_to_access_tokens")[$group_in_config]))
+        {
+            return SystemConfig::Get("groups_to_access_tokens")[$group_in_config];
+        }
+        return null;
     }
 
     /**

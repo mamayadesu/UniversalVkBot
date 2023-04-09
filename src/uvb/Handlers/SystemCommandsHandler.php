@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Handlers;
 
 use uvb\cmm;
+use uvb\Models\Group;
 use uvb\System\SystemConfig;
 use uvb\ConversationIdsResource;
 use uvb\Main;
@@ -78,13 +79,13 @@ class SystemCommandsHandler extends Plugin
         $this->commandsRegistered = true;
     }
 
-    private function PrivateOutput(User $user) : string
+    private function PrivateOutput(User $user, Group $group) : string
     {
         $output = cmm::g("command.commandslistprivate");
         $nameToDesc = array();
         foreach ($this->cmdmgr->GetRegisteredPrivateCommands() as $cmdinfo)
         {
-            if (!$cmdinfo->IsAllowedForUsers() && !$user->IsAdmin())
+            if ((!$cmdinfo->IsAllowedForUsers() && !$user->IsAdmin()) || (!$cmdinfo->GetOwner()->IsEnabledForGroup($group) && $user->IsHuman()))
             {
                 continue;
             }
@@ -100,13 +101,13 @@ class SystemCommandsHandler extends Plugin
         return $output;
     }
 
-    private function ConversationOutput(User $user) : string
+    private function ConversationOutput(User $user, Group $group) : string
     {
         $output = cmm::g("command.commandslistconversation");
         $nameToDesc = array();
         foreach ($this->cmdmgr->GetRegisteredConversationCommands() as $cmdinfo)
         {
-            if (!$cmdinfo->IsAllowedForUsers() && !$user->IsAdmin())
+            if ((!$cmdinfo->IsAllowedForUsers() && !$user->IsAdmin()) || (!$cmdinfo->GetOwner()->IsEnabledForGroup($group) && $user->IsHuman()))
             {
                 continue;
             }
@@ -121,7 +122,7 @@ class SystemCommandsHandler extends Plugin
         return $output;
     }
 
-    public function OnCommand(Command $cmd) : void
+    public function OnCommand(Command $cmd, Group $group) : void
     {
         $name = $cmd->GetName();
         $user = $cmd->GetUser();
@@ -130,16 +131,16 @@ class SystemCommandsHandler extends Plugin
         switch ($name)
         {
             case "help":
-                $user->Send($this->PrivateOutput($user));
+                $user->Send($this->PrivateOutput($user, $group), $group);
                 break;
 
             case "stop":
-                $user->Send(cmm::g("main.stopping"));
+                $user->Send(cmm::g("main.stopping"), $group);
                 $this->GetBot()->Shutdown();
                 break;
 
             case "restart":
-                $user->Send(cmm::g("main.restarting"));
+                $user->Send(cmm::g("main.restarting"), $group);
                 $this->GetBot()->Reboot();
                 break;
 
@@ -154,61 +155,61 @@ class SystemCommandsHandler extends Plugin
                 {
                     $pluginsName[] = $plugin->GetPluginName();
                 }
-                $user->Send(cmm::g("main.pluginsloadedcommand", [count($plugins), implode(", ", $pluginsName)]));
+                $user->Send(cmm::g("main.pluginsloadedcommand", [count($plugins), implode(", ", $pluginsName)]), $group);
                 break;
 
             case "status":
-                $user->Send($this->main->GetStatusAsString());
+                $user->Send($this->main->GetStatusAsString(), $group);
                 break;
 
             case "setlanguage":
                 if (!isset($args[0]))
                 {
-                    $user->Send(cmm::g("command.setlanguage.noarg"));
+                    $user->Send(cmm::g("command.setlanguage.noarg"), $group);
                     return;
                 }
                 if ($this->main->consoleMessagesManager->SetLanguage($args[0]))
                 {
-                    $user->Send(cmm::g("command.setlanguage.ok"));
+                    $user->Send(cmm::g("command.setlanguage.ok"), $group);
                 }
                 else
                 {
-                    $user->Send(cmm::g("command.setlanguage.error"));
+                    $user->Send(cmm::g("command.setlanguage.error"), $group);
                 }
                 break;
 
             case "banip":
                 if (!isset($args[0]))
                 {
-                    $user->Send(cmm::g("command.banip.noargs"));
+                    $user->Send(cmm::g("command.banip.noargs"), $group);
                     return;
                 }
                 if ($ab->IsBanned($args[0], true))
                 {
-                    $user->Send(cmm::g("command.banip.alreadybanned"));
+                    $user->Send(cmm::g("command.banip.alreadybanned"), $group);
                     return;
                 }
                 if (!$ab->Ban($args[0]))
                 {
-                    $user->Send(cmm::g("command.banip.invalidip"));
+                    $user->Send(cmm::g("command.banip.invalidip"), $group);
                     return;
                 }
-                $user->Send(cmm::g("command.banip.ok"));
+                $user->Send(cmm::g("command.banip.ok"), $group);
                 break;
 
             case "unbanip":
                 if (!isset($args[0]))
                 {
-                    $user->Send(cmm::g("command.unbanip.noargs"));
+                    $user->Send(cmm::g("command.unbanip.noargs"), $group);
                     return;
                 }
                 if (!$ab->IsBanned($args[0], true))
                 {
-                    $user->Send(cmm::g("command.unbanip.notbanned"));
+                    $user->Send(cmm::g("command.unbanip.notbanned"), $group);
                     return;
                 }
                 $ab->Unban($args[0]);
-                $user->Send(cmm::g("command.unbanip.ok"));
+                $user->Send(cmm::g("command.unbanip.ok"), $group);
                 break;
 
             case "confirmresponse":
@@ -216,19 +217,19 @@ class SystemCommandsHandler extends Plugin
                 {
                     $confirmResponse = $this->main->bot->GetConfirmResponse();
                     if ($confirmResponse == "")
-                        $user->Send(cmm::g("command.confirmresponse.get.empty"));
+                        $user->Send(cmm::g("command.confirmresponse.get.empty"), $group);
                     else
-                        $user->Send(cmm::g("command.confirmresponse.get", [$confirmResponse]));
+                        $user->Send(cmm::g("command.confirmresponse.get", [$confirmResponse]), $group);
 
                     return;
                 }
 
                 $this->main->bot->SetConfirmResponse($args[0]);
-                $user->Send(cmm::g("command.confirmresponse.set", [$args[0]]));
+                $user->Send(cmm::g("command.confirmresponse.set", [$args[0]]), $group);
         }
     }
 
-    public function OnConversationCommand(Command $cmd, int $conversationId) : void
+    public function OnConversationCommand(Command $cmd, int $conversationId, Group $group) : void
     {
         $name = $cmd->GetName();
         $user = $cmd->GetUser();
@@ -237,7 +238,7 @@ class SystemCommandsHandler extends Plugin
         switch ($name)
         {
             case "help":
-                Message::SendToConversation($this->ConversationOutput($user), $conversationId, []);
+                Message::SendToConversation($this->ConversationOutput($user, $group), $conversationId, [], $group);
                 break;
 
             case "conversationid":
@@ -251,25 +252,30 @@ class SystemCommandsHandler extends Plugin
                 {
                     $output .= cmm::g("command.conversationidwarning");
                 }
-                $user->Send($output);
+                $user->Send($output, $group);
                 break;
 
             case "addconversationid":
                 if (!isset($args[0]))
                 {
-                    $user->Send(cmm::g("command.addconversationid"));
+                    $user->Send(cmm::g("command.addconversationid"), $group);
                     return;
                 }
                 $cid = intval($args[0]);
                 if ($cid <= 2000000000)
                 {
-                    $user->Send(cmm::g("command.conversationidtoosmall"));
+                    $user->Send(cmm::g("command.conversationidtoosmall"), $group);
                     return;
                 }
                 $cids->Set($conversationId, $cid);
                 $cids->Save();
-                $user->Send(cmm::g("command.addconversationiddone"));
+                $user->Send(cmm::g("command.addconversationiddone"), $group);
                 break;
         }
+    }
+
+    public function IsEnabledForGroup(Group $group): bool
+    {
+        return true;
     }
 }

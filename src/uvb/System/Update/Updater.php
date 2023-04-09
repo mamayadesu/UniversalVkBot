@@ -28,8 +28,16 @@ final class Updater
     private Logger $logger;
 
     private string $newVersion, $phpVersion, $downloadUrl, $sourceUpdateFileData = "", $currentPackage = "";
-    private array/*<string>*/ $supportedApi;
-    private array/*<string, string>*/ $versions_history;
+
+    /**
+     * @var string[]
+     */
+    private array $supportedApi;
+
+    /**
+     * @var array<string, string>
+     */
+    private array $versions_history;
 
     public function __construct(Main $main, Logger $logger, SystemLogger $sl)
     {

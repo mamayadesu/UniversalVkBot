@@ -30,9 +30,10 @@ class Audio extends Attachment
     private bool $isExplicit, $isFocusTrack, $shortVideosAllowed, $storiesAllowed, $storiesCoverAllowed, $noSearch = false;
 
     /**
+     * @var AudioArtist[]
      * @ignore
      */
-    private array/*<AudioArtist>*/ $mainArtists = [], $featuredArtists = [];
+    private array $mainArtists = [], $featuredArtists = [];
 
     /**
      * @ignore
@@ -289,12 +290,18 @@ class Audio extends Attachment
         return $this->noSearch;
     }
 
-    public function GetMainArtists() : array/*<AudioArtist>*/
+    /**
+     * @return AudioArtist[]
+     */
+    public function GetMainArtists() : array
     {
         return $this->mainArtists;
     }
 
-    public function GetFeaturedArtists() : array/*<AudioArtist>*/
+    /**
+     * @return AudioArtist[]
+     */
+    public function GetFeaturedArtists() : array
     {
         return $this->featuredArtists;
     }

@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Events\Messages;
 
 use uvb\Events\Event;
+use uvb\Models\Group;
 use uvb\Models\User;
 
 /**
@@ -26,10 +27,11 @@ class UserLeftEvent extends Event
     /**
      * @ignore
      */
-    public function __construct(User $left, int $conversationId)
+    public function __construct(Group $group, User $left, int $conversationId)
     {
         $this->left = $left;
         $this->conversationId = $conversationId;
+        parent::__construct($group);
     }
 
     /**

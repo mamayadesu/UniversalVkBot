@@ -45,7 +45,7 @@ final class Post
      * @var array<Attachment>
      * @ignore
      */
-    private array/*<Attachment>*/ $Attachments = [];
+    private array $Attachments = [];
 
     /**
      * @ignore
@@ -141,7 +141,7 @@ final class Post
      * @param bool $allComments Загрузить ВСЕ комментарии
      * @return Comment[] Комментарии к посту
      */
-    public function GetComments(int $threadItemsCount = 1, int $offset = 0, int $count = 100, bool $allComments = true) : array/*<Comment>*/
+    public function GetComments(int $threadItemsCount = 1, int $offset = 0, int $count = 100, bool $allComments = true) : array
     {
         /** @var array<Comment> $result */$result = [];
         $wall = self::GetApi();
@@ -233,7 +233,7 @@ final class Post
     /**
      * @return Attachment[] Вложения
      */
-    public function GetAttachments() : array/*<Attachment>*/
+    public function GetAttachments() : array
     {
         return $this->Attachments;
     }

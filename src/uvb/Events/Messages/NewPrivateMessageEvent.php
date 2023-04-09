@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Events\Messages;
 
 use uvb\Events\Event;
+use uvb\Models\Group;
 use uvb\Models\User;
 use uvb\Models\Message;
 
@@ -27,10 +28,11 @@ class NewPrivateMessageEvent extends Event
     /**
      * @ignore
      */
-    public function __construct(Message $im, string $rawData)
+    public function __construct(Group $group, Message $im, string $rawData)
     {
         $this->inboxMessage = $im;
         $this->rawData = $rawData;
+        parent::__construct($group);
     }
 
     /**

@@ -27,16 +27,17 @@ class BotJoinEvent extends Event
     /**
      * @ignore
      */
-    private Group $group;
+    private Group $joinedGroup;
 
     /**
      * @ignore
      */
-    public function __construct(User $invited, Group $group, int $conversationId)
+    public function __construct(Group $group, User $invited, Group $joinedGroup, int $conversationId)
     {
         $this->invited = $invited;
         $this->conversationId = $conversationId;
-        $this->group = $group;
+        $this->joinedGroup = $joinedGroup;
+        parent::__construct($group);
     }
 
     /**
@@ -60,12 +61,12 @@ class BotJoinEvent extends Event
     }
 
     /**
-     * Получить объект группы
+     * Получить объект группы, которая была добавлена в беседу
      *
      * @return Group
      */
-    public function GetGroup() : Group
+    public function GetJoinedGroup() : Group
     {
-        return $this->group;
+        return $this->joinedGroup;
     }
 }

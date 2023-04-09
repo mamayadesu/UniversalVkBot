@@ -16,14 +16,16 @@ class Sticker extends Attachment
     private int $productId, $stickerId;
 
     /**
+     * @var array<StickerImage>
      * @ignore
      */
-    private array/*<StickerImage>*/ $images;
+    private array $images;
 
     /**
+     * @var array<StickerImage>
      * @ignore
      */
-    private array/*<StickerImage>*/ $imagesWithBackground;
+    private array $imagesWithBackground;
 
     /**
      * @ignore
@@ -109,7 +111,7 @@ class Sticker extends Attachment
      * @param bool $withBackground Будут ли возвращены ссылки на изображения с фоном
      * @return array<StickerImage> Возвращает список объектов StickerImage, содержащие в себе информацию о файле изображения стикера
      */
-    public function GetImages($withBackground = false) : array/*<StickerImage>*/
+    public function GetImages(bool $withBackground = false) : array
     {
         if ($withBackground)
         {

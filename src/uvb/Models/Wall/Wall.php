@@ -43,9 +43,9 @@ final class Wall
      * @param int $offset Смещение. Начинается с 0
      * @param int $count Количество записей
      * @param bool $allPosts Если TRUE, в цикле загружает все записи со стены
-     * @return array<int, Post>
+     * @return Post[]
      */
-    public function GetPosts(string $filter = WallFilters::ALL, int $offset = 0, int $count = 100, bool $allPosts = false) : array/*<Post>*/
+    public function GetPosts(string $filter = WallFilters::ALL, int $offset = 0, int $count = 100, bool $allPosts = false) : array
     {
         $userCache = UserCache::GetInstance();
         $result = [];

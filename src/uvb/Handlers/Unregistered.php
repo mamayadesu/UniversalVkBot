@@ -32,15 +32,19 @@ class Unregistered
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnUnregistered($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.unregistered", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnUnregistered($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.unregistered", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }

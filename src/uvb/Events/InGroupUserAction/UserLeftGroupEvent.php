@@ -22,21 +22,16 @@ class UserLeftGroupEvent extends Event
     /**
      * @ignore
      */
-    private Group $group;
-
-    /**
-     * @ignore
-     */
     private bool $leftBySelf;
 
     /**
      * @ignore
      */
-    public function __construct(User $user, Group $group, bool $leftBySelf)
+    public function __construct(Group $group, User $user, bool $leftBySelf)
     {
         $this->user = $user;
         $this->leftBySelf = $leftBySelf;
-        $this->group = $group;
+        parent::__construct($group);
     }
 
     /**
@@ -66,6 +61,6 @@ class UserLeftGroupEvent extends Event
      */
     public function GetGroup() : Group
     {
-        return $this->group;
+        return parent::GetGroup();
     }
 }

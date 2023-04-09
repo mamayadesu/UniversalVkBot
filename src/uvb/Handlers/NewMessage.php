@@ -43,15 +43,19 @@ class NewMessage
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnNewPrivateMessage($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.newmessage", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnNewPrivateMessage($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.newmessage", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }
@@ -65,15 +69,19 @@ class NewMessage
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnNewConversationMessage($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.newconversationmessage", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnNewConversationMessage($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.newconversationmessage", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }
@@ -87,15 +95,19 @@ class NewMessage
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnUserAdd($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.useradd", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnUserAdd($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.useradd", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }
@@ -109,14 +121,18 @@ class NewMessage
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnUserJoin($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.userjoin", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnUserJoin($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.userjoin", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }
@@ -130,15 +146,19 @@ class NewMessage
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnUserLeft($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.userleft", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnUserLeft($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.userleft", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }
@@ -152,15 +172,19 @@ class NewMessage
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnUserKick($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.userkick", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnUserKick($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.userkick", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }
@@ -174,15 +198,19 @@ class NewMessage
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnBotJoin($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.botjoin", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnBotJoin($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.botjoin", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }
@@ -196,15 +224,19 @@ class NewMessage
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnBotLeft($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.botleft", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnBotLeft($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.botleft", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }
@@ -218,15 +250,19 @@ class NewMessage
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnCommandPreProcess($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.commandpreprocess", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnCommandPreProcess($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.commandpreprocess", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }

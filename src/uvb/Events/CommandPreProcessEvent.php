@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Events;
 
 use uvb\Models\Command;
+use uvb\Models\Group;
 
 /**
  * Событие. Предварительный процесс ввода команды
@@ -30,12 +31,13 @@ class CommandPreProcessEvent extends Event
     /**
      * @ignore
      */
-    public function __construct($command, bool $isPrivate, int $conversationId)
+    public function __construct(Group $group, Command $command, bool $isPrivate, int $conversationId)
     {
         $this->command = $command;
         $this->isPrivate = $isPrivate;
         $this->conversationId = $conversationId;
         $this->isCancellable = true;
+        parent::__construct($group);
     }
 
     /**

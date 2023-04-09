@@ -3,6 +3,8 @@ declare(ticks = 1);
 
 namespace uvb\Events;
 
+use uvb\Models\Group;
+
 /**
  * Событие. Незарегистрированное
  * @package uvb\Events
@@ -23,11 +25,12 @@ class UnregisteredVkEvent extends Event
     /**
      * @ignore
      */
-    public function __construct(string $rawContent, array $data, string $type)
+    public function __construct(Group $group, string $rawContent, array $data, string $type)
     {
         $this->rawContent = $rawContent;
         $this->data = $data;
         $this->type = $type;
+        parent::__construct($group);
     }
 
     /**

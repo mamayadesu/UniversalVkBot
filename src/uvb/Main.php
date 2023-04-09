@@ -77,8 +77,9 @@ final class Main
 
     /**
      * @var array<Threaded>
+     * @ignore
      */
-    private array/*<Threaded>*/ $threads = [];
+    private array $threads = [];
     public array $config;
     private int $cmdPid = -1;
     private string $cmdNextKey = "";
@@ -596,7 +597,8 @@ final class Main
             $response->End("Bad request");
             return;
         }
-        if (!isset($data["secret"]) || $data["secret"] != SystemConfig::Get("secret_key"))
+        $secret_keys = SystemConfig::Get("groups_to_secret_keys");
+        if (!isset($data["secret"]) || !isset($data["group_id"]) || !isset($secret_keys["club" . $data["group_id"]]) || $secret_keys["club" . $data["group_id"]] != $data["secret"])
         {
             cmm::e("request.wrongsecretkey");
             $response->End("Invalid secret key");
@@ -630,10 +632,11 @@ final class Main
             /*
              * ################
              */
+            $group = Group::Get($data["group_id"]);
             switch ($data["type"])
             {
                 case "message_new":
-                    $obj = $data["object"];
+                    $obj = $data["object"]["message"];
                     $date = $obj["date"];
                     $fromId = $obj["from_id"];
                     $peer_id = $obj["peer_id"];
@@ -671,17 +674,17 @@ final class Main
                         {
                             if ($obj["action"]["member_id"] < 0)
                             {
-                                $event = new BotJoinEvent($from, Group::Get($obj["action"]["member_id"]), $peer_id);
+                                $event = new BotJoinEvent($group, $from, Group::Get($obj["action"]["member_id"]), $peer_id);
                                 $this->newMessage->OnBotJoin($event);
                             }
                             else if ($obj["action"]["member_id"] > 0 && $obj["action"]["member_id"] != $fromId)
                             {
-                                $event = new UserAddEvent($from, User::Get($obj["action"]["member_id"]), $peer_id);
+                                $event = new UserAddEvent($group, $from, User::Get($obj["action"]["member_id"]), $peer_id);
                                 $this->newMessage->OnUserAdd($event);
                             }
                             else if ($obj["action"]["member_id"] == $fromId)
                             {
-                                $event = new UserJoinEvent($from, $peer_id);
+                                $event = new UserJoinEvent($group, $from, $peer_id);
                                 $this->newMessage->OnUserJoin($event);
                             }
                         }
@@ -691,18 +694,18 @@ final class Main
                             {
                                 if ($obj["action"]["member_id"] != $fromId)
                                 {
-                                    $event = new UserKickEvent($from, User::Get($obj["action"]["member_id"]), $peer_id);
+                                    $event = new UserKickEvent($group, $from, User::Get($obj["action"]["member_id"]), $peer_id);
                                     $this->newMessage->OnUserKick($event);
                                 }
                                 else
                                 {
-                                    $event = new UserLeftEvent($from, $peer_id);
+                                    $event = new UserLeftEvent($group, $from, $peer_id);
                                     $this->newMessage->OnUserLeft($event);
                                 }
                             }
                             else if ($obj["action"]["member_id"] < 0)
                             {
-                                $event = new BotLeftEvent($from, Group::Get($obj["action"]["member_id"]), $peer_id);
+                                $event = new BotLeftEvent($group, $from, Group::Get($obj["action"]["member_id"]), $peer_id);
                                 $this->newMessage->OnBotLeft($event);
                             }
                         }
@@ -729,17 +732,17 @@ final class Main
                             $cmdname = $arrcmd[0];
                             array_shift($arrcmd);
                             $cmd = new Command($cmdname, $arrcmd, $from, 0);
-                            $event = new CommandPreProcessEvent($cmd, true, $peer_id);
+                            $event = new CommandPreProcessEvent($group, $cmd, true, $peer_id);
                             $this->newMessage->OnCommandPreProcess($event);
                             if (!$event->IsCancelled())
                             {
-                                $this->commandHandler->OnCommand($cmd);
+                                $this->commandHandler->OnCommand($cmd, $group);
                             }
                         }
                         else
                         {
-                            $event = new NewPrivateMessageEvent($inboxMsg, $request->GetRawContent());
-                            $this->newMessage->OnNewPrivateMessage($event);
+                            $event = new NewPrivateMessageEvent($group, $inboxMsg, $request->GetRawContent());
+                            $this->newMessage->OnNewPrivateMessage($event, $group);
                         }
                     }
                     else
@@ -751,16 +754,16 @@ final class Main
                             $cmdname = $arrcmd[0];
                             array_shift($arrcmd);
                             $cmd = new Command($cmdname, $arrcmd, $from, $peer_id);
-                            $event = new CommandPreProcessEvent($cmd, false, $peer_id);
+                            $event = new CommandPreProcessEvent($group, $cmd, false, $peer_id);
                             $this->newMessage->OnCommandPreProcess($event);
                             if (!$event->IsCancelled())
                             {
-                                $this->commandHandler->OnConversationCommand($cmd, $peer_id);
+                                $this->commandHandler->OnConversationCommand($cmd, $peer_id, $group);
                             }
                         }
                         else
                         {
-                            $event = new NewConversationMessageEvent($inboxMsg, $peer_id, $request->GetRawContent());
+                            $event = new NewConversationMessageEvent($group, $inboxMsg, $peer_id, $request->GetRawContent());
                             $this->newMessage->OnNewConversationMessage($event);
                         }
                     }
@@ -769,7 +772,6 @@ final class Main
                 case "group_join":
                     $obj = $data["object"];
                     $user = User::Get($obj["user_id"]);
-                    $group = Group::Get($data["group_id"]);
                     $__join = false;
                     $__request = false;
                     $__approved = false;
@@ -787,7 +789,7 @@ final class Main
                             $__approved = true;
                             break;
                     }
-                    $event = new UserJoinGroupEvent($user, $group, $__join, $__request, $__approved);
+                    $event = new UserJoinGroupEvent($group, $user, $__join, $__request, $__approved);
                     $this->inGroupUserAction->OnUserJoinGroup($event);
                     break;
 
@@ -796,12 +798,12 @@ final class Main
                     $user = User::Get($obj["user_id"]);
                     $group = Group::Get($data["group_id"]);
                     $leftBySelf = $obj["self"] == 1;
-                    $event = new UserLeftGroupEvent($user, $group, $leftBySelf);
+                    $event = new UserLeftGroupEvent($group, $user, $leftBySelf);
                     $this->inGroupUserAction->OnUserLeftGroup($event);
                     break;
 
                 default:
-                    $event = new UnregisteredVkEvent($request->GetRawContent(), json_decode($request->GetRawContent(), true), $data["type"]);
+                    $event = new UnregisteredVkEvent($group, $request->GetRawContent(), json_decode($request->GetRawContent(), true), $data["type"]);
                     $this->unregistered->OnUnregistered($event);
                     break;
             }
@@ -839,6 +841,16 @@ final class Main
             fwrite($f, json_encode($this->config, JSON_PRETTY_PRINT));
             fclose($f);
         }
+        if (count($this->config["groups_to_access_tokens"]) == 0)
+        {
+            cmm::e("config.nogroups");
+            $somethingWrong = true;
+        }
+        if (json_encode($this->config["groups_to_access_tokens"]) == json_encode($this->GetDefaultConfig()["groups_to_access_tokens"]))
+        {
+            cmm::e("config.groupsnotconfigured");
+            $somethingWrong = true;
+        }
         /*if (strlen($this->config["access_token"]) != 85)
         {
             cmm::e("config.accesstoken");
@@ -867,11 +879,17 @@ final class Main
     {
         return array
         (
-            "access_token" => "",
+            "groups_to_access_tokens" => [
+                "club1234" => "this_is_a_default_group",
+                "club5678" => "access_token_of_default_group"
+            ],
             "main_admin_access_token" => "",
             "server_addr" => "0.0.0.0",
             "server_port" => 80,
-            "secret_key" => "",
+            "groups_to_secret_keys" => [
+                "club1234" => "secret_key_1",
+                "club5678" => "secret_key_2"
+            ],
             "admins" => [
 
             ],

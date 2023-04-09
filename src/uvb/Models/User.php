@@ -32,13 +32,13 @@ final class User implements Entity
      * @var array<string, string>
      * @ignore
      */
-    private array/*<string, string>*/ $FirstName;
+    private array $FirstName;
 
     /**
      * @var array<string, string>
      * @ignore
      */
-    private array/*<string, string>*/ $LastName;
+    private array $LastName;
 
     /**
      * @var string
@@ -323,7 +323,7 @@ final class User implements Entity
      * @param BotKeyboard|null $keyboard Клавиатура бота. Если не нужно указывать клавиатуру бота, можно просто указать "пустой" экземпляр класса BotKeyboard или указать NULL
      * @param Geolocation|null $geolocation Геолокация
      */
-    public function SendMessage(string $text, array $attachments, ?BotKeyboard $keyboard = null, ?Geolocation $geolocation = null) : void
+    public function SendMessage(string $text, array $attachments = [], ?Group $by_group = null, ?BotKeyboard $keyboard = null, ?Geolocation $geolocation = null) : void
     {
         $text = str_replace("<user>", $this->GetMention(), $text);
         $text = str_replace("<fulluser>", $this->GetFullMention(), $text);
@@ -336,7 +336,7 @@ final class User implements Entity
             $text);
         try
         {
-            Message::Send($text, $this, $attachments, $keyboard, $geolocation);
+            Message::Send($text, $this, $by_group, $attachments, $keyboard, $geolocation);
         }
         catch (\Exception $e)
         {
@@ -362,13 +362,17 @@ final class User implements Entity
      *
      * @param string $text Текст сообщения. Замечание: в тексте сообщения можно использовать теги <user> и <fulluser>. Они будут использоваться как тэги упоминания с имени и тэги упоминания с именем и фамилией соответственно
      */
-    public function Send(string $text) : void
+    public function Send(string $text, ?Group $group = null) : void
     {
+        if ($group == null)
+        {
+            $group = Bot::GetInstance()->GetDefaultGroup();
+        }
         $text = str_replace("<user>", $this->GetMention(), $text);
         $text = str_replace("<fulluser>", $this->GetFullMention(), $text);
         try
         {
-            Message::Send($text, $this, []);
+            Message::Send($text, $this, $group, []);
         }
         catch (Exception $e)
         {
@@ -499,7 +503,7 @@ final class User implements Entity
             $isNullUser = false;
             try
             {
-                $r = $users->get(SystemConfig::Get("access_token"), $p);
+                $r = $users->get(SystemConfig::Get("main_admin_access_token"), $p);
             }
             catch (Exception $e)
             {

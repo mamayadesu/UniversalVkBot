@@ -47,7 +47,7 @@ final class Comment
      * @var array<Attachment>
      * @ignore
      */
-    private array/*<Attachment>*/ $Attachments = array();
+    private array $Attachments = array();
 
     /**
      * @ignore
@@ -120,7 +120,7 @@ final class Comment
     /**
      * @return Attachment[] Вложения
      */
-    public function GetAttachments() : array/*<Attachment>*/
+    public function GetAttachments() : array
     {
         return $this->Attachments;
     }

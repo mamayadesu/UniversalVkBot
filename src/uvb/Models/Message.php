@@ -55,6 +55,7 @@ final class Message
     private string $Text;
 
     /**
+     * @var array<Attachment>
      * @ignore
      */
     private array/*<Attachment>*/ $Attachments;
@@ -167,9 +168,9 @@ final class Message
     }
 
     /**
-     * @return array<int, Attachment> Список вложений
+     * @return Attachment[] Список вложений
      */
-    public function GetAttachments() : array/*<Attachment>*/
+    public function GetAttachments() : array
     {
         return $this->Attachments;
     }
@@ -189,10 +190,13 @@ final class Message
      *
      * @return bool TRUE - сообщение удалено. FALSE - произошла ошибка (см. консоль)
      */
-    public function Delete() : bool
+    public function Delete(?Group $group_deleter = null) : bool
     {
+        if ($group_deleter === null)
+        {
+            $group_deleter = $this->Group;
+        }
         $api = self::GetApi();
-        $config = SystemConfigResource::GetConfig();
         $deleteParams = array(
             "delete_for_all" => true,
             "conversation_message_ids" => $this->GetConversationMessageId(),
@@ -201,7 +205,7 @@ final class Message
 
         try
         {
-            $api->delete($config["access_token"], $deleteParams);
+            $api->delete($group_deleter->GetAccessToken(), $deleteParams);
         }
         catch (Exception $e)
         {
@@ -209,6 +213,40 @@ final class Message
             return false;
         }
         return true;
+    }
+
+    /**
+     * Ответить пользователю на сообщение. Если это сообщение в беседе, оно также будет отправлено в беседу
+     *
+     * @param string $message Текст сообщения
+     * @param array $attachments Список вложений. Вложения указывать в простом формате: <mediatype><owner>_<attachment>_<accesskey>. Например: photo1234_5678
+     * @param BotKeyboard|null $keyboard Клавиатура бота (не нужна, если это сообщение в беседе)
+     * @param Geolocation|null $geolocation Геолокация
+     * @return void
+     * @throws VKApiException
+     * @throws VKApiMessagesCantFwdException
+     * @throws VKApiMessagesChatBotFeatureException
+     * @throws VKApiMessagesChatUserNoAccessException
+     * @throws VKApiMessagesContactNotFoundException
+     * @throws VKApiMessagesDenySendException
+     * @throws VKApiMessagesKeyboardInvalidException
+     * @throws VKApiMessagesPrivacyException
+     * @throws VKApiMessagesTooLongForwardsException
+     * @throws VKApiMessagesTooLongMessageException
+     * @throws VKApiMessagesTooManyPostsException
+     * @throws VKApiMessagesUserBlockedException
+     * @throws VKClientException
+     */
+    public function Reply(string $message, array $attachments = [], ?BotKeyboard $keyboard = null, ?Geolocation $geolocation = null) : void
+    {
+        if ($this->IsPrivate())
+        {
+            $this->GetFrom()->SendMessage($message, $attachments, $this->Group, $keyboard, $geolocation);
+        }
+        else
+        {
+            Message::SendToConversation($message, $this->PeerId, $attachments, $this->Group, $geolocation);
+        }
     }
 
     /**
@@ -232,8 +270,12 @@ final class Message
      * @throws VKApiMessagesUserBlockedException
      * @throws VKClientException
      */
-    public static function SendToConversation(string $message, int $conversationId, array $attachments, ?Geolocation $geolocation = null) : void
+    public static function SendToConversation(string $message, int $conversationId, array $attachments = [], ?Group $by_group = null, ?Geolocation $geolocation = null) : void
     {
+        if ($by_group === null)
+        {
+            $by_group = Bot::GetInstance()->GetDefaultGroup();
+        }
         $random_id = "";
 
         for ($i = 0; $i <= rand(5, 10); $i++)
@@ -256,7 +298,7 @@ final class Message
         {
             $params["attachment"] = implode(',', $attachments);
         }
-        self::GetApi()->send(SystemConfig::Get("access_token"), $params);
+        self::GetApi()->send($by_group->GetAccessToken(), $params);
     }
 
     /**
@@ -289,9 +331,9 @@ final class Message
      * @throws VKApiMessagesUserBlockedException
      * @throws VKClientException
      */
-    public static function Send(string $message, User $user, array $attachments, ?BotKeyboard $keyboard = null, ?Geolocation $geolocation = null) : void
+    public static function Send(string $message, User $user, ?Group $by_group = null, array $attachments = [], ?BotKeyboard $keyboard = null, ?Geolocation $geolocation = null) : void
     {
-        self::Mailing($message, [$user], $attachments, $keyboard = null, $geolocation);
+        self::Mailing($message, [$user], $by_group, $attachments, $keyboard, $geolocation);
     }
 
     /**
@@ -316,8 +358,12 @@ final class Message
      * @throws VKApiMessagesUserBlockedException
      * @throws VKClientException
      */
-    public static function Mailing(string $message, array $users, array $attachments, ?BotKeyboard $keyboard = null, ?Geolocation $geolocation = null) : void
+    public static function Mailing(string $message, array $users, ?Group $by_group = null, array $attachments = [], ?BotKeyboard $keyboard = null, ?Geolocation $geolocation = null) : void
     {
+        if ($by_group === null)
+        {
+            $by_group = Bot::GetInstance()->GetDefaultGroup();
+        }
         $vkIds = [];
         $limit = 0;
         $sentToConsole = false;
@@ -401,6 +447,6 @@ final class Message
             $params["lat"] = $geolocation->Latitude;
             $params["long"] = $geolocation->Longitude;
         }
-        self::GetApi()->send(SystemConfig::Get("access_token"), $params);
+        self::GetApi()->send($by_group->GetAccessToken(), $params);
     }
 }

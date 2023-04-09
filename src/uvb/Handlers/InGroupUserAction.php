@@ -34,15 +34,19 @@ class InGroupUserAction
             {
                 break;
             }
-            try
+
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnUserJoinGroup($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.userjoingroup", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnUserJoinGroup($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.userjoingroup", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
         if ($event->IsCancelled())
@@ -65,15 +69,18 @@ class InGroupUserAction
             {
                 break;
             }
-            try
+            if ($plugin->IsEnabledForGroup($event->GetGroup()))
             {
-                $plugin->OnUserLeftGroup($event);
-            }
-            catch (Throwable $e)
-            {
-                cmm::c("exception.userleftgroup", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
-                CrashHandler::Handle($e, $plugin);
-                $plugin->DisablePlugin();
+                try
+                {
+                    $plugin->OnUserLeftGroup($event);
+                }
+                catch (Throwable $e)
+                {
+                    cmm::c("exception.userleftgroup", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
+                    CrashHandler::Handle($e, $plugin);
+                    $plugin->DisablePlugin();
+                }
             }
         }
     }

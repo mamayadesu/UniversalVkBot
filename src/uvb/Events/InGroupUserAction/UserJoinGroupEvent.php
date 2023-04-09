@@ -22,24 +22,19 @@ class UserJoinGroupEvent extends Event
     /**
      * @ignore
      */
-    private Group $group;
-
-    /**
-     * @ignore
-     */
     private bool $join, $request, $approved;
 
     /**
      * @ignore
      */
-    public function __construct(User $user, Group $group, bool $join, bool $request, bool $approved)
+    public function __construct(Group $group, User $user, bool $join, bool $request, bool $approved)
     {
         $this->user = $user;
         $this->join = $join;
         $this->request = $request;
         $this->approved = $approved;
         $this->isCancellable = true;
-        $this->group = $group;
+        parent::__construct($group);
     }
 
     /**
@@ -103,6 +98,6 @@ class UserJoinGroupEvent extends Event
      */
     public function GetGroup() : Group
     {
-        return $this->group;
+        return parent::GetGroup();
     }
 }

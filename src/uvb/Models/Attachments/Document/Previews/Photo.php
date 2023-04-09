@@ -13,9 +13,10 @@ use \Exception;
 final class Photo extends Preview
 {
     /**
+     * @var array<Size>
      * @ignore
      */
-    private array/*<Size>*/ $sizes = array();
+    private array $sizes = array();
 
     /**
      * @ignore
@@ -36,7 +37,7 @@ final class Photo extends Preview
     /**
      * @return array<Size> Массив размеров изображения
      */
-    public function GetSizes() : array/*<Size>*/
+    public function GetSizes() : array
     {
         return $this->sizes;
     }

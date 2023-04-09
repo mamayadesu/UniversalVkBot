@@ -15,6 +15,7 @@ use uvb\Logger;
 use uvb\Main;
 use \RecursiveIteratorIterator;
 use uvb\Models\CommandInfo;
+use uvb\Models\Group;
 use uvb\System\CrashHandler;
 use uvb\SystemLogger;
 
@@ -29,19 +30,22 @@ use uvb\SystemLogger;
 class PluginManager
 {
     /**
+     * @var array<Plugin>
      * @ignore
      */
-    private array/*<Plugin>*/ $loadedPlugins = [];
+    private array $loadedPlugins = [];
 
     /**
+     * @var array<string>
      * @ignore
      */
-    private array/*<Plugin>*/ $unloadedPlugins = [];
+    private array $unloadedPlugins = [];
 
     /**
+     * @var array<string, string>
      * @ignore
      */
-    private array/*<string, string>*/ $waitingForPlugins = array();
+    private array $waitingForPlugins = array();
 
     /**
      * @ignore
@@ -59,6 +63,11 @@ class PluginManager
     private static ?PluginManager $instance = null;
 
     /**
+     * @var array<string, string[]>
+     */
+    private array $pluginsSettings = array();
+
+    /**
      * @ignore
      */
     public function __construct(Main $main, SystemLogger $sl)
@@ -70,10 +79,14 @@ class PluginManager
         self::$instance = $this;
         $this->sl = $sl;
         $this->main = $main;
+        $this->LoadPluginsSettings();
         @mkdir($this->GetPathToPlugins());
     }
 
-    public function GetQueue() : array/*<string, string>*/
+    /**
+     * @return array<string, string>
+     */
+    public function GetQueue() : array
     {
         return $this->waitingForPlugins;
     }
@@ -98,8 +111,9 @@ class PluginManager
      * Загружает плагин. В случае ошибки выводит информацию в консоль
      *
      * @param string $pathToPlugin Путь к PHAR-файлу
+     * @param bool $plugins_settings_autosave Сохранять ли плагин в plugins_settings.json по умолчанию
      */
-    public function LoadPlugin(string $pathToPlugin) : void
+    public function LoadPlugin(string $pathToPlugin, bool $plugins_settings_autosave = true) : void
     {
         $pluginDirectory = dirname($pathToPlugin) . DIRECTORY_SEPARATOR;
         $p = null;
@@ -272,7 +286,7 @@ class PluginManager
                 $this->RemovePluginFromQueue($name);
                 return;
             }
-            $this->LoadPluginFromSource($name, $version, $api_version, $main, $privateCommands, $conversationCommands, $dependences);
+            $this->LoadPluginFromSource($name, $version, $api_version, $main, $privateCommands, $conversationCommands, $dependences, $plugins_settings_autosave);
             
             foreach ($this->waitingForPlugins as $pluginName => $pathToPlugin)
             {
@@ -305,8 +319,9 @@ class PluginManager
      * @param array<string, array<string, string>> $privateCommands Список команд для личных сообщений
      * @param array<string, array<string, string>> $conversationCommands Список команд для бесед
      * @param array<string> $dependences Список плагинов, от которых загружаемый плагин зависит
+     * @param bool $plugins_settings_autosave Нужно ли сохранять плагин в plugins_settings.json
      */
-    public function LoadPluginFromSource(string $name, string $version, string $api_version, string $main, array $privateCommands, array $conversationCommands, array $dependences) : void
+    public function LoadPluginFromSource(string $name, string $version, string $api_version, string $main, array $privateCommands, array $conversationCommands, array $dependences, bool $plugins_settings_autosave = true) : void
     {
         
         cmm::l("pluginmanager.loading", [$name, $version]);
@@ -366,6 +381,40 @@ class PluginManager
             $plugin->DisablePlugin(); 
             return;
         }
+
+        $settings_changed = false;
+        if (!isset($this->pluginsSettings[$name]))
+        {
+            $this->pluginsSettings[$name] = [];
+            $settings_changed = true;
+        }
+
+        if (count($this->pluginsSettings[$name]) == 0)
+        {
+            cmm::l("pluginmanager.loadedforallgroups", [$name]);
+        }
+        else
+        {
+            /** @var Group[] $groups */$groups = [];
+            foreach ($this->pluginsSettings[$name] as $club)
+            {
+                $club_id = intval(str_replace("club", "", $club));
+                $groups[] = Group::Get($club_id);
+            }
+
+            $groups_names = [];
+            foreach ($groups as $group)
+            {
+                $groups_names[] = $group->GetName();
+            }
+
+            cmm::l("pluginmanager.loadedfornextgroups", [$name, implode(", ", $groups_names)]);
+        }
+
+        if ($settings_changed && $plugins_settings_autosave)
+        {
+            $this->SavePluginsSettings();
+        }
     }
 
     /**
@@ -376,8 +425,10 @@ class PluginManager
         foreach (glob($this->GetPathToPlugins() . "*.phar") as $pharPath)
         {
             cmm::l("pluginmanager.found", [$pharPath]);
-            $this->LoadPlugin($pharPath);
+            $this->LoadPlugin($pharPath, false);
         }
+
+        $this->SavePluginsSettings();
     }
 
     /**
@@ -501,5 +552,106 @@ class PluginManager
     public function GetPlugins() : array
     {
         return $this->loadedPlugins;
+    }
+
+    /**
+     * @ignore
+     */
+    private function ResetPluginsSettings(string $path_to_file) : void
+    {
+        cmm::e("pluginssettings.invalid_file");
+        $f = fopen($path_to_file, "w+");
+        fwrite($f, json_encode(array(), JSON_PRETTY_PRINT));
+        fclose($f);
+        $this->pluginsSettings = array();
+    }
+
+    /**
+     * @ignore
+     */
+    private function LoadPluginsSettings() : void
+    {
+        $path_to_file = Application::GetExecutableDirectory() . "plugins_settings.json";
+
+        if (!file_exists($path_to_file))
+        {
+            $this->ResetPluginsSettings($path_to_file);
+        }
+        else
+        {
+            $settings = @json_decode(file_get_contents($path_to_file), true);
+            $somethingWrong = false;
+            if ($settings === null)
+            {
+                $this->ResetPluginsSettings($path_to_file);
+                $somethingWrong = true;
+            }
+            else
+            {
+                foreach ($settings as $pluginname => $clubs_list)
+                {
+                    if (!is_string($pluginname) || !is_array($clubs_list))
+                    {
+                        $this->ResetPluginsSettings($path_to_file);
+                        $somethingWrong = true;
+                    }
+                    else
+                    {
+                        foreach ($clubs_list as $club)
+                        {
+                            if (strlen($club) <= 4)
+                            {
+                                $this->ResetPluginsSettings($path_to_file);
+                                $somethingWrong = true;
+                            }
+                            else
+                            {
+                                if (substr($club, 0, 4) != "club")
+                                {
+                                    $this->ResetPluginsSettings($path_to_file);
+                                    $somethingWrong = true;
+                                }
+                                else
+                                {
+                                    $club_id = intval(substr($club, 4));
+                                    if ($club_id <= 0)
+                                    {
+                                        $this->ResetPluginsSettings($path_to_file);
+                                        $somethingWrong = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!$somethingWrong)
+                {
+                    $this->pluginsSettings = $settings;
+                }
+            }
+        }
+    }
+
+    /**
+     * Получить настройки plugins_settings.json
+     *
+     * @return array<string, string[]>
+     */
+    public function GetPluginsSettings() : array
+    {
+        return $this->pluginsSettings;
+    }
+
+    /**
+     * Сохранить настройки plugins_settings.json
+     *
+     * @return void
+     */
+    public function SavePluginsSettings() : void
+    {
+        $f = fopen(Application::GetExecutableDirectory() . "plugins_settings.json", "w+");
+        fwrite($f, json_encode($this->pluginsSettings, JSON_PRETTY_PRINT));
+        fclose($f);
     }
 }

@@ -3,6 +3,7 @@ declare(ticks = 1);
 
 namespace uvb\Models\Attachments\Video;
 
+use Couchbase\Group;
 use \Exception;
 use uvb\Bot;
 use uvb\System\SystemConfig;
@@ -28,6 +29,7 @@ class Video extends Attachment
     private int $duration, $width = 0, $height = 0, $views;
 
     /**
+     * @var array<VideoImage>
      * @ignore
      */
     private array/*<VideoImage>*/ $image, $firstFrame = [];
@@ -310,7 +312,7 @@ class Video extends Attachment
      * Получить список кадров в видео
      * @return array<VideoImage> Список объектов VideoImages, хранящие информацию о кадрах в видео
      */
-    public function GetImage() : array/*<VideoImage>*/
+    public function GetImage() : array
     {
         return $this->image;
     }
@@ -319,7 +321,7 @@ class Video extends Attachment
      * Получить список первых кадров в видео
      * @return array<VideoImage> Список объектов VideoImage, хранящие информацию о первых кадрах в видео
      */
-    public function GetFirstFrame() : array/*<VideoImage>*/
+    public function GetFirstFrame() : array
     {
         return $this->firstFrame;
     }
@@ -332,8 +334,12 @@ class Video extends Attachment
      * @return array Список URL на исходные файлы видео
      * @throws Exception
      */
-    public function GetDownloadLinks() : array
+    public function GetDownloadLinks(?Group $by_group = null) : array
     {
+        if ($by_group === null)
+        {
+            $by_group = Bot::GetInstance()->GetDefaultGroup();
+        }
         $video = Bot::GetVkApi()->video();
         $videoId = $this->ownerId . "_" . $this->id . ($this->accessKey != "" ? "_" . $this->accessKey : "");
         $params = array
@@ -344,7 +350,7 @@ class Video extends Attachment
         );
         try
         {
-            $response = $video->get(SystemConfig::Get("access_token"), $params);
+            $response = $video->get($by_group->GetAccessToken(), $params);
         }
         catch (Exception $e)
         {

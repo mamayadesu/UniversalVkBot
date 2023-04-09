@@ -16,9 +16,10 @@ use uvb\Models\Attachments\AttachmentTypes;
 class Photo extends Attachment
 {
     /**
+     * @var array<PhotoSize>
      * @ignore
      */
-    private array/*<PhotoSize>*/ $sizes;
+    private array $sizes;
 
     /**
      * @ignore
@@ -95,7 +96,7 @@ class Photo extends Attachment
      *
      * @return array<PhotoSize> Список объектов PhotoSize, в которых в каждом из них информация о размере фотографии
      */
-    public function GetSizes() : array/*<PhotoSize>*/
+    public function GetSizes() : array
     {
         return $this->sizes;
     }

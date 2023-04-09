@@ -175,7 +175,7 @@ final class Geolocation
      * @return array<string, mixed>
      * @throws Exception Выбрасывает исключение, если геолокация не содержит координаты или тип геометки
      */
-    public function ToVkArray() : array/*<string, mixed>*/
+    public function ToVkArray() : array
     {
         $result = array();
 

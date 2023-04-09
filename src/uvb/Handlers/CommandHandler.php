@@ -3,10 +3,12 @@ declare(ticks = 1);
 
 namespace uvb\Handlers;
 
+use uvb\Bot;
 use uvb\cmm;
 use uvb\Main;
 use uvb\Models\Command;
 use uvb\Models\CommandInfo;
+use uvb\Models\Group;
 use uvb\Models\Message;
 use \Throwable;
 use uvb\System\CrashHandler;
@@ -24,7 +26,7 @@ class CommandHandler
         $this->main = $main;
     }
 
-    public function OnCommand(Command $cmd) : void
+    public function OnCommand(Command $cmd, Group $group) : void
     {
         $commands = $this->main->commandManager->GetRegisteredPrivateCommands();
         $executor = null;
@@ -32,7 +34,7 @@ class CommandHandler
         $cmdi = null;
         foreach ($commands as $c)
         {if (!$c instanceof CommandInfo) continue;
-            if ($c->GetCommandName() == $cmd->GetName())
+            if ($c->GetCommandName() == $cmd->GetName() && ($c->GetOwner()->IsEnabledForGroup($group) || !$user->IsHuman()))
             {
                 $cmdi = $c;
                 $executor = $c->GetOwner();
@@ -40,17 +42,17 @@ class CommandHandler
         }
         if ($executor == null)
         {
-            $user->Send(cmm::g("command.unknown", [$cmd->GetName()]));
+            $user->Send(cmm::g("command.unknown", [$cmd->GetName()]), $group);
         }
         else if (!$cmdi->IsAllowedForUsers() && !$user->IsAdmin())
         {
-            $user->Send(cmm::g("command.nopermission"));
+            $user->Send(cmm::g("command.nopermission"), $group);
         }
         else
         {
             try
             {
-                $executor->OnCommand($cmd);
+                $executor->OnCommand($cmd, $group);
             }
             catch (Throwable $e)
             {
@@ -61,7 +63,7 @@ class CommandHandler
         }
     }
 
-    public function OnConversationCommand(Command $cmd, int $conversationId) : void
+    public function OnConversationCommand(Command $cmd, int $conversationId, Group $group) : void
     {
         $commands = $this->main->commandManager->GetRegisteredConversationCommands();
         $executor = null;
@@ -69,7 +71,7 @@ class CommandHandler
         $cmdi = null;
         foreach ($commands as $c)
         {if (!$c instanceof CommandInfo) continue;
-            if ($c->GetCommandName() == $cmd->GetName())
+            if ($c->GetCommandName() == $cmd->GetName() && ($c->GetOwner()->IsEnabledForGroup($group) || !$user->IsHuman()))
             {
                 $cmdi = $c;
                 $executor = $c->GetOwner();
@@ -77,17 +79,17 @@ class CommandHandler
         }
         if ($executor == null)
         {
-            Message::SendToConversation(cmm::g("command.convunknown", [$user->GetMention(), $cmd->GetName()]), $conversationId, []);
+            Message::SendToConversation(cmm::g("command.convunknown", [$user->GetMention(), $cmd->GetName()]), $conversationId, [], $group);
         }
         else if (!$cmdi->IsAllowedForUsers() && !$user->IsAdmin())
         {
-            Message::SendToConversation(cmm::g("command.convnopermission", [$user->GetMention(), $cmd->GetName()]), $conversationId, []);
+            Message::SendToConversation(cmm::g("command.convnopermission", [$user->GetMention(), $cmd->GetName()]), $conversationId, [], $group);
         }
         else
         {
             try
             {
-                $executor->OnConversationCommand($cmd, $conversationId);
+                $executor->OnConversationCommand($cmd, $conversationId, $group);
             }
             catch (Throwable $e)
             {

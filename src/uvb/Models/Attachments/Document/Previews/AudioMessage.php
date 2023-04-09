@@ -18,6 +18,7 @@ class AudioMessage extends Preview
     private int $duration;
 
     /**
+     * @var array<int>
      * @ignore
      */
     private array/*<int>*/ $waveform;
@@ -66,7 +67,7 @@ class AudioMessage extends Preview
     /**
      * @return array<int> Массив целых чисел для визуального отображения звука
      */
-    public function GetWaveForm() : array/*<int>*/
+    public function GetWaveForm() : array
     {
         return $this->waveform;
     }

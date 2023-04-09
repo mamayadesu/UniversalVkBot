@@ -20,6 +20,7 @@ use uvb\Events\Messages\NewConversationMessageEvent;
 use uvb\Events\UnregisteredVkEvent;
 use uvb\Logger;
 use uvb\Models\Command;
+use uvb\Models\Group;
 
 /**
  * Данный класс описывает запущенный плагин, содержит в себе набор необходимых методов для API и является абстрактным.
@@ -287,7 +288,7 @@ abstract class Plugin
      *
      * @param UserJoinEvent $event Объект, описывающий событие
      */
-    public function OnUserJoin(UserJoinEvent $event)
+    public function OnUserJoin(UserJoinEvent $event) : void
     {
 
     }
@@ -342,7 +343,7 @@ abstract class Plugin
      *
      * @param CommandPreProcessEvent $event Объект, описывающий событие
      */
-    public function OnCommandPreProcess(CommandPreProcessEvent $event)
+    public function OnCommandPreProcess(CommandPreProcessEvent $event) : void
     {
 
     }
@@ -353,8 +354,9 @@ abstract class Plugin
      * Поэтому если в плагине всего одна команда, в теле метода необязательно уточнять какая именно команда была введена
      *
      * @param Command $cmd Объект, описывающий введённую команду
+     * @param Group $group Группа, к которой принадлежит событие
      */
-    public function OnCommand(Command $cmd) : void
+    public function OnCommand(Command $cmd, Group $group) : void
     {
 
     }
@@ -366,8 +368,9 @@ abstract class Plugin
      *
      * @param Command $cmd Объект, описывающий исполняемую команду с её аргументами
      * @param int $conversationId Идентификатор беседы
+     * @param Group $group Группа, к которой принадлежит событие
      */
-    public function OnConversationCommand(Command $cmd, int $conversationId) : void
+    public function OnConversationCommand(Command $cmd, int $conversationId, Group $group) : void
     {
 
     }
@@ -378,7 +381,7 @@ abstract class Plugin
      *
      * @param UserJoinGroupEvent $event Объект, описывающий событие
      */
-    public function OnUserJoinGroup(UserJoinGroupEvent $event)
+    public function OnUserJoinGroup(UserJoinGroupEvent $event) : void
     {
 
     }
@@ -389,7 +392,7 @@ abstract class Plugin
      *
      * @param UserLeftGroupEvent $event Объект, описывающий событие
      */
-    public function OnUserLeftGroup(UserLeftGroupEvent $event)
+    public function OnUserLeftGroup(UserLeftGroupEvent $event) : void
     {
 
     }
@@ -399,8 +402,26 @@ abstract class Plugin
      *
      * @param UnregisteredVkEvent $event Объект, описывающий событие
      */
-    public function OnUnregistered(UnregisteredVkEvent $event)
+    public function OnUnregistered(UnregisteredVkEvent $event) : void
     {
 
+    }
+
+    /**
+     * Включён ли плагин для указанной группы
+     *
+     * @param Group $group
+     * @return bool
+     */
+    public function IsEnabledForGroup(Group $group) : bool
+    {
+        $settings = $this->GetBot()->GetPluginManager()->GetPluginsSettings();
+
+        if (!isset($settings[$this->GetPluginName()]) || count($settings[$this->GetPluginName()]) == 0)
+        {
+            return true;
+        }
+
+        return in_array("club" . $group->GetVkId(), $settings[$this->GetPluginName()]);
     }
 }
