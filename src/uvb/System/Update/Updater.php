@@ -14,6 +14,7 @@ use uvb\Logger;
 use uvb\Main;
 use uvb\Plugin\Plugin;
 use uvb\SystemLogger;
+use uvb\Utils\AsyncCurl;
 
 /**
  * @ignore
@@ -23,7 +24,7 @@ final class Updater
 {
     private Main $main;
     private string $checkUrl = "https://raw.githubusercontent.com/mamayadesu/UniversalVkBot/main/update/update.json";
-    private bool $updateFound = false, $readyToPrepare = false, $readyToInstall = false, $updateWasFinished = false;
+    private bool $updateFound = false, $readyToPrepare = false, $readyToInstall = false, $updateWasFinished = false, $alreadyChecking = false;
     private SystemLogger $sl;
     private Logger $logger;
 
@@ -290,45 +291,59 @@ final class Updater
 
     public function CheckForUpdates() : void
     {
+        if ($this->alreadyChecking)
+        {
+            cmm::w("system.update.alreadychecking", []);
+            return;
+        }
         cmm::l("system.update.checking", []);
         $this->updateFound = false;
         $this->readyToInstall = false;
         $this->readyToPrepare = false;
-        $ch = curl_init($this->checkUrl);
+        $this->alreadyChecking = true;
+        $async_curl = new AsyncCurl($this->checkUrl);
+
+        $ch = $async_curl->GetCurlHandle();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        $result = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
 
-        if ($http_code != 200)
+        $async_curl->ExecutedCallback = function(string $result, $ch) : void
         {
-            cmm::e("system.update.fail.server", []);
-            return;
-        }
-        $this->sourceUpdateFileData = $result;
-        $data = json_decode($result, true);
-        if ($data == null)
-        {
-            cmm::e("system.update.fail.data", []);
-            var_dump($result);
-            return;
-        }
+            $this->alreadyChecking = false;
+            $http_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
 
-        $currentVersion = Application::GetVersion();
-        if ($data["version"] == $currentVersion)
-        {
-            cmm::l("system.update.noupdates", []);
-            return;
-        }
-        $this->newVersion = $data["version"];
-        $this->versions_history = $data["versions_history"];
-        $this->supportedApi = $data["api_versions"];
-        $this->phpVersion = $data["php_version"];
-        $this->downloadUrl = $data["url"];
+            if ($http_code != 200)
+            {
+                cmm::e("system.update.fail.server", []);
+                return;
+            }
+            $this->sourceUpdateFileData = $result;
+            $data = json_decode($result, true);
+            if ($data == null)
+            {
+                cmm::e("system.update.fail.data", []);
+                var_dump($result);
+                return;
+            }
 
-        cmm::l("system.update.title", [$this->newVersion]);
-        cmm::l("system.update.text", []);
-        $this->updateFound = true;
+            $currentVersion = Application::GetVersion();
+            if ($data["version"] == $currentVersion)
+            {
+                cmm::l("system.update.noupdates", []);
+                return;
+            }
+            $this->newVersion = $data["version"];
+            $this->versions_history = $data["versions_history"];
+            $this->supportedApi = $data["api_versions"];
+            $this->phpVersion = $data["php_version"];
+            $this->downloadUrl = $data["url"];
+
+            cmm::l("system.update.title", [$this->newVersion]);
+            cmm::l("system.update.text", []);
+            $this->updateFound = true;
+        };
+
+        $async_curl->Execute();
     }
 }

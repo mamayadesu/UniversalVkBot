@@ -105,6 +105,7 @@ messagerepository.mailing.attachments=**вложения
 messagerepository.mailing.keyboard=**клавиатура бота
 messagerepository.mailing.emptymessage=**пустое сообщение
 system.update.checking=Проверка обновлений...
+system.update.alreadychecking=Проверка обновлений уже выполняется
 system.update.noupdates=Вы используете последнюю версию UniversalVkBot
 system.update.fail.server=Ошибка проверки обновлений. Не удалось подключиться к серверу
 system.update.fail.data=Ошибка проверки обновлений. Не удалось проверить обновления. Возможно, проблемы со стороны разработчика
