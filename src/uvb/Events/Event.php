@@ -18,9 +18,9 @@ abstract class Event
      */
     protected bool $isCancellable = false, $cancelled = false;
 
-    protected Group $group;
+    protected ?Group $group = null;
 
-    public function __construct(Group $group)
+    public function __construct(?Group $group)
     {
         $this->group = $group;
     }
@@ -59,9 +59,9 @@ abstract class Event
     /**
      * Получить объект группы, к которой относится событие
      *
-     * @return Group
+     * @return Group|null
      */
-    public function GetGroup() : Group
+    public function GetGroup() : ?Group
     {
         return $this->group;
     }

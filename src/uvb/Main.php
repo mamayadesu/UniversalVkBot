@@ -28,10 +28,11 @@ use uvb\Events\Messages\UserAddEvent;
 use uvb\Events\Messages\UserJoinEvent;
 use uvb\Events\Messages\UserKickEvent;
 use uvb\Events\Messages\UserLeftEvent;
+use uvb\Events\ServerRequestEvent;
 use uvb\Events\UnregisteredVkEvent;
 use uvb\Handlers\InGroupUserAction;
 use uvb\Handlers\SystemCommandsHandler;
-use uvb\Handlers\Unregistered;
+use uvb\Handlers\Common;
 use uvb\Models\Attachments\AttachmentTypes;
 use uvb\Models\Command;
 use uvb\Models\Entity;
@@ -90,7 +91,7 @@ final class Main
     public NewMessage $newMessage;
     public CommandHandler $commandHandler;
     public CommandManager $commandManager;
-    public Unregistered $unregistered;
+    public Common $common;
     public ?PluginManager $pluginManager = null;
     public UserCache $userCache;
     public ?Bot $bot = null;
@@ -371,7 +372,7 @@ final class Main
         $this->api = new VKApiClient();
         $this->newMessage = new NewMessage($this); 
         $this->commandHandler = new CommandHandler($this); 
-        $this->unregistered = new Unregistered($this); 
+        $this->common = new Common($this);
         $this->pluginManager = new PluginManager($this, $this->sl); 
         $this->commandManager = new CommandManager($this); 
 
@@ -577,28 +578,35 @@ final class Main
                 return;
             }
         }
-        $response->Header("Content-Type", "text/plain");
+        $secret_keys = SystemConfig::Get("groups_to_secret_keys");
+        $is_valid_secret_key = !(!isset($data["secret"]) || !isset($data["group_id"]) || !isset($secret_keys["club" . $data["group_id"]]) || $secret_keys["club" . $data["group_id"]] != $data["secret"]);
+        $group = null;
+        if ($is_valid_secret_key && isset($data["group_id"]))
+        {
+            $group = Group::Get($data["group_id"]);
+        }
 
+        $request_event = new ServerRequestEvent($group, $request, $response, $is_valid_secret_key);
+        $this->common->OnServerRequest($request_event);
+        if ($request_event->IsDefaultRequestHandlerPrevented())
+        {
+            return;
+        }
+
+        $response->Header("Content-Type", "text/plain");
         if ($request->RequestUri != "/" . Bot::REQUEST_URI)
         {
-            /*$this->bot->GetLogger()->Error("*******************");
-            cmm::e("request.wronguri", [$request->RequestUri]);
-            $this->bot->GetLogger()->Error($request->GetRawContent());
-            $this->bot->GetLogger()->Error($request->RemoteAddress);*/
             $response->End("Wrong URI");
-            /*$this->bot->GetLogger()->Error("*******************");*/
             return;
         }
 
         if ($data == null)
         {
-            /*cmm::e("request.incorrectdata");
-            $this->bot->GetLogger()->Error($request->GetRawContent());*/
             $response->End("Bad request");
             return;
         }
-        $secret_keys = SystemConfig::Get("groups_to_secret_keys");
-        if (!isset($data["secret"]) || !isset($data["group_id"]) || !isset($secret_keys["club" . $data["group_id"]]) || $secret_keys["club" . $data["group_id"]] != $data["secret"])
+
+        if (!$is_valid_secret_key)
         {
             cmm::e("request.wrongsecretkey");
             $response->End("Invalid secret key");
@@ -622,17 +630,7 @@ final class Main
             $obj = array();
             $event = null;
             $response->End("ok");
-            /*
-             * // debug
-             */
-            $myvar = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            $myfile = fopen(Application::GetExecutableDirectory() . "test.json", "w");
-            fwrite($myfile, $myvar);
-            fclose($myfile);
-            /*
-             * ################
-             */
-            $group = Group::Get($data["group_id"]);
+
             switch ($data["type"])
             {
                 case "message_new":
@@ -742,7 +740,7 @@ final class Main
                         else
                         {
                             $event = new NewPrivateMessageEvent($group, $inboxMsg, $request->GetRawContent());
-                            $this->newMessage->OnNewPrivateMessage($event, $group);
+                            $this->newMessage->OnNewPrivateMessage($event);
                         }
                     }
                     else
@@ -804,7 +802,7 @@ final class Main
 
                 default:
                     $event = new UnregisteredVkEvent($group, $request->GetRawContent(), json_decode($request->GetRawContent(), true), $data["type"]);
-                    $this->unregistered->OnUnregistered($event);
+                    $this->common->OnUnregistered($event);
                     break;
             }
         }
@@ -851,21 +849,6 @@ final class Main
             cmm::e("config.groupsnotconfigured");
             $somethingWrong = true;
         }
-        /*if (strlen($this->config["access_token"]) != 85)
-        {
-            cmm::e("config.accesstoken");
-            $somethingWrong = true;
-        }*/
-        /*if (intval($this->config["group_id"]) < 1)
-        {
-            cmm::e("config.groupid");
-            $somethingWrong = true;
-        }*/
-        /*if (strlen($this->config["main_admin_access_token"]) != 85)
-        {
-            cmm::e("config.mainadminaccesstoken");
-            $somethingWrong = true;
-        }*/
         if ($somethingWrong)
         {
             cmm::w("config.somethingwrong");

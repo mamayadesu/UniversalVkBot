@@ -17,6 +17,7 @@ use uvb\Events\Messages\UserKickEvent;
 use uvb\Events\Messages\UserLeftEvent;
 use uvb\Events\Messages\NewPrivateMessageEvent;
 use uvb\Events\Messages\NewConversationMessageEvent;
+use uvb\Events\ServerRequestEvent;
 use uvb\Events\UnregisteredVkEvent;
 use uvb\Logger;
 use uvb\Models\Command;
@@ -403,6 +404,17 @@ abstract class Plugin
      * @param UnregisteredVkEvent $event Объект, описывающий событие
      */
     public function OnUnregistered(UnregisteredVkEvent $event) : void
+    {
+
+    }
+
+    /**
+     * Событие. Запрос на сервер
+     *
+     * @param ServerRequestEvent $event
+     * @return void
+     */
+    public function OnServerRequest(ServerRequestEvent $event) : void
     {
 
     }
