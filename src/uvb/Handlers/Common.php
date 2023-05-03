@@ -60,7 +60,7 @@ class Common
                 break;
             }
 
-            if ($plugin->IsEnabledForGroup($event->GetGroup()))
+            if ($event->GetGroup() === null || $plugin->IsEnabledForGroup($event->GetGroup()))
             {
                 try
                 {

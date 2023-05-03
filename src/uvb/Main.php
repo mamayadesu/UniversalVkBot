@@ -202,19 +202,18 @@ final class Main
         {
             // в случае какой-то необработанно ошибки, кидаем 500 ошибку,
             // чтобы клиент не ждал бесконечное количество лет
-            try
+            $this->Server_Request($request, $response, $server);
+        });
+
+        $this->server->On("throwable", function(Request $request, Response $response, Throwable $throwable, Server $server) : void
+        {
+            if (!$response->IsClosed())
             {
-                $this->Server_Request($request, $response, $server);
+                $response->Status(500);
+                $response->End("Internal Server Error");
             }
-            catch (Throwable $e)
-            {
-                if (!$response->IsClosed())
-                {
-                    $response->Status(500);
-                    $response->End("Internal Server Error");
-                }
-            }
-        }); 
+            Bot::GetInstance()->GetLogger()->Error("Failed to proceed HTTP-request. Uncaught " . get_class($throwable) . ". '" . $throwable->getMessage() . "'");
+        });
 
         /**
          * Запускаем HTTP-сервер асинхронно, чтобы можно было использовать и асинхронные задачи, и обработчик команд
