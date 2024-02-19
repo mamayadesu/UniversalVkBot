@@ -47,7 +47,6 @@ final class Wall
      */
     public function GetPosts(string $filter = WallFilters::ALL, int $offset = 0, int $count = 100, bool $allPosts = false) : array
     {
-        $userCache = UserCache::GetInstance();
         $result = [];
         $wall_getParams = array
         (
@@ -76,14 +75,13 @@ final class Wall
 
             foreach ($posts["items"] as $item)
             {
-                $result[] = new Post(
+                $result[] = Post::Factory(
                     $item["id"],
+                    $tempEntities[$item["owner_id"]] ?? null,
                     $item["date"],
                     $item["text"],
                     (bool)$item["marked_as_ads"],
-                    (bool)$item["is_favorite"],
                     $tempEntities[$item["from_id"]] ?? null,
-                    $tempEntities[$item["owner_id"]] ?? null,
                     isset($item["created_by"]) ? $tempEntities[$item["created_by"]] : null,
                     $item["attachments"] ?? []
                 );
@@ -104,7 +102,7 @@ final class Wall
     /**
      * @ignore
      */
-    private static function GetApi() : VKWall
+    public static function GetApi() : VKWall
     {
         return Bot::GetVkApi()->wall();
     }

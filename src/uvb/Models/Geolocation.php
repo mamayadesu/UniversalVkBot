@@ -234,7 +234,7 @@ final class Geolocation
         $name = "group_id";
         $name1 = "Group";
         if ($this->$name1 != null)
-            $result["place"][$name] = $this->Group->GetVkId();
+            $result["place"][$name] = -$this->Group->GetVkId();
 
         $name = "checkins";
         $name1 = "Checkins";

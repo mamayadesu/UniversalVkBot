@@ -1,5 +1,4 @@
 <?php
-declare(ticks = 1);
 
 namespace VK\Exceptions;
 

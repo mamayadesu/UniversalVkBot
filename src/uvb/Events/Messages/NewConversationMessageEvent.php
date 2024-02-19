@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Events\Messages;
 
 use uvb\Events\Event;
+use uvb\Models\Conversation;
 use uvb\Models\Group;
 use uvb\Models\Message;
 
@@ -22,7 +23,7 @@ class NewConversationMessageEvent extends Event
     /**
      * @ignore
      */
-    private int $conversationId;
+    private Conversation $conversation;
 
     /**
      * @ignore
@@ -32,10 +33,10 @@ class NewConversationMessageEvent extends Event
     /**
      * @ignore
      */
-    public function __construct(Group $group, Message $inboxMessage, int $conversationId, string $rawData)
+    public function __construct(Group $group, Message $inboxMessage, Conversation $conversation, string $rawData)
     {
         $this->inboxMessage = $inboxMessage;
-        $this->conversationId = $conversationId;
+        $this->conversation = $conversation;
         $this->rawData = $rawData;
         $this->isCancellable = true;
         parent::__construct($group);
@@ -52,13 +53,13 @@ class NewConversationMessageEvent extends Event
     }
 
     /**
-     * Получить идентификатор беседы
+     * Получить объект беседы
      *
-     * @return int Идентификатор беседы
+     * @return Conversation
      */
-    public function GetConversationId() : int
+    public function GetConversation() : Conversation
     {
-        return $this->conversationId;
+        return $this->conversation;
     }
 
     /**

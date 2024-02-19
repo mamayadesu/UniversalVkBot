@@ -1,4 +1,5 @@
 <?php
+declare(ticks = 1);
 
 namespace uvb\Services;
 
@@ -6,13 +7,23 @@ use \Exception;
 use Scheduler\AsyncTask;
 use Scheduler\IAsyncTaskParameters;
 use uvb\cmm;
+use uvb\Models\Wall\Comment;
+use uvb\Models\Wall\Post;
 use uvb\Utils\CpuUsage;
 
+/**
+ * @ignore
+ */
 class ResourcesWatcher
 {
+    const WALL_CHECK_INTERVAL = 3600;
+
     private static ?ResourcesWatcher $instance = null;
 
-    private ?AsyncTask $ramWatcher = null, $cpuWatcher = null;
+    /**
+     * @var AsyncTask[]
+     */
+    private array $tasks;
 
     private int $highCpuUsageDetected = 0, $highRamUsageDetected = 0;
 
@@ -25,9 +36,13 @@ class ResourcesWatcher
 
         if (CpuUsage::IsRunning())
         {
-            $this->cpuWatcher = new AsyncTask($this, 1000, false, function(AsyncTask $task, IAsyncTaskParameters $params) : void { $this->AsyncCpuCheck($task, $params); });
+            $this->tasks["cpuWatcher"] = new AsyncTask($this, 1000, false, function(AsyncTask $task, IAsyncTaskParameters $params) : void { $this->AsyncCpuCheck($task, $params); });
         }
-        $this->ramWatcher = new AsyncTask($this, 1000, false, function(AsyncTask $task, IAsyncTaskParameters $params) : void { $this->AsyncRamCheck($task, $params); });
+        $this->tasks["ramWatcher"] = new AsyncTask($this, 1000, false, function(AsyncTask $task, IAsyncTaskParameters $params) : void { $this->AsyncRamCheck($task, $params); });
+
+        $this->tasks["postsCacheWatcher"] = new AsyncTask($this, self::WALL_CHECK_INTERVAL * 1000, false, function(AsyncTask $task, IAsyncTaskParameters $params) : void { $this->AsyncPostsCacheCheck($task, $params); });
+
+        $this->tasks["commentsCacheWatcher"] = new AsyncTask($this, self::WALL_CHECK_INTERVAL * 1000, false, function(AsyncTask $task, IAsyncTaskParameters $params) : void { $this->AsyncCommentsCacheCheck($task, $params); });
     }
 
     private function AsyncCpuCheck(AsyncTask $task, IAsyncTaskParameters $params) : void
@@ -74,13 +89,45 @@ class ResourcesWatcher
         }
     }
 
+    private function AsyncPostsCacheCheck(AsyncTask $task, IAsyncTaskParameters $params) : void
+    {
+        $keys_to_delete = [];
+        foreach (Post::GetPostsCache() as $key => $post)
+        {
+            if ((time() - $post->GetLoadedDate()) > self::WALL_CHECK_INTERVAL)
+            {
+                $keys_to_delete[] = $key;
+            }
+        }
+
+        foreach ($keys_to_delete as $key)
+        {
+            Post::DeleteFromCache($key);
+        }
+    }
+
+    private function AsyncCommentsCacheCheck(AsyncTask $task, IAsyncTaskParameters $params) : void
+    {
+        $keys_to_delete = [];
+        foreach (Comment::GetCommentsCache() as $key => $post)
+        {
+            if ((time() - $post->GetLoadedDate()) > self::WALL_CHECK_INTERVAL)
+            {
+                $keys_to_delete[] = $key;
+            }
+        }
+
+        foreach ($keys_to_delete as $key)
+        {
+            Comment::DeleteFromCache($key);
+        }
+    }
+
     public function ShutdownTasks() : void
     {
-        $this->ramWatcher->Cancel();
-
-        if ($this->cpuWatcher !== null)
+        foreach ($this->tasks as $task)
         {
-            $this->cpuWatcher->Cancel();
+            $task->Cancel();
         }
     }
 }

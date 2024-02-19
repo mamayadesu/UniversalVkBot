@@ -10,7 +10,6 @@ use uvb\Models\Group;
 use uvb\Models\User;
 use uvb\Plugin\CommandManager;
 use uvb\Plugin\PluginManager;
-use uvb\Protection\AddressBlocker;
 use uvb\Services\RamController;
 use uvb\Services\UserCache;
 use uvb\System\SystemConfig;
@@ -49,12 +48,7 @@ final class Bot
     /**
      * @ignore
      */
-    private AddressBlocker $addressBlocker;
-
-    /**
-     * @ignore
-     */
-    private bool $isShuttingDown = false;
+    private bool $isShuttingDown = false, $restartSupported;
 
     /**
      * @ignore
@@ -74,7 +68,7 @@ final class Bot
     /**
      * @ignore
      */
-    public function __construct(Main $main, Logger $logger, Logger $clogger, SystemLogger $sl)
+    public function __construct(Main $main, Logger $logger, Logger $clogger, SystemLogger $sl, bool $restartSupported)
     {
         if (self::$instance != null)
         {
@@ -84,8 +78,8 @@ final class Bot
         $this->logger = $logger;
         $this->clogger = $clogger;
         $this->sl = $sl;
-        $this->addressBlocker = new AddressBlocker($this->main);
-        $this->addressBlocker->Load();
+        $this->restartSupported = $restartSupported;
+        Admins::Initialize();
         self::$instance = $this;
     }
 
@@ -95,6 +89,16 @@ final class Bot
     public function GetCpuUsage() : float
     {
         return CpuUsage::GetValue();
+    }
+
+    public function GetCpuUsageAsString() : string
+    {
+        $value = CpuUsage::GetValue() . '';
+        if (count(explode('.', $value)) == 1)
+        {
+            $value .= '.0';
+        }
+        return $value;
     }
 
     public function GetRamController() : RamController
@@ -131,16 +135,6 @@ final class Bot
     public function GetConfirmResponse() : string
     {
         return $this->confirmResponse;
-    }
-
-    /**
-     * Доступ к сервису контроля IP-адресов
-     *
-     * @return AddressBlocker
-     */
-    public function GetAddressBlocker() : AddressBlocker
-    {
-        return $this->addressBlocker;
     }
 
     /**
@@ -238,8 +232,8 @@ final class Bot
             $args[] = $arg;
         }
         $group = $this->GetDefaultGroup();
-        $command = new Command($commandName, $args, $user, 0);
-        $_event = new CommandPreProcessEvent($group, $command, true, 0);
+        $command = new Command($commandName, $args, $user, null, null);
+        $_event = new CommandPreProcessEvent($group, $command, true, null);
         $this->main->newMessage->OnCommandPreProcess($_event);
         if (!$_event->IsCancelled())
         {
@@ -293,8 +287,21 @@ final class Bot
      */
     public function Reboot() : void
     {
+        if (!$this->restartSupported)
+        {
+            cmm::w("main.restart_is_not_supported");
+            return;
+        }
         $this->main->exitCode = 2;
         $this->ProcStopper();
+    }
+
+    /**
+     * @return bool Поддерживается ли перезапуск бота
+     */
+    public function IsRestartSupported() : bool
+    {
+        return $this->restartSupported;
     }
 
     /**

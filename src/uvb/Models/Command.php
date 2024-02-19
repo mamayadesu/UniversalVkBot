@@ -30,17 +30,23 @@ final class Command
     /**
      * @ignore
      */
-    private int $ConversationId;
+    private ?Conversation $Conversation;
 
     /**
      * @ignore
      */
-    public function __construct(string $commandName, array $args, User $sender, int $conversationId)
+    private ?Message $Message;
+
+    /**
+     * @ignore
+     */
+    public function __construct(string $commandName, array $args, User $sender, ?Message $message, ?Conversation $conversation)
     {
         $this->CommandName = $commandName;
         $this->Arguments = $args;
         $this->Sender = $sender;
-        $this->ConversationId = ($conversationId > 2000000000 ? $conversationId - 2000000000 : $conversationId);
+        $this->Conversation = $conversation;
+        $this->Message = $message;
     }
 
     /**
@@ -68,27 +74,20 @@ final class Command
     }
 
     /**
-     * Получить идентификатор беседы, в которую команда была введена
+     * Получить объект беседы, в которую команда была введена
      *
-     * @return int Идентификатор беседы. Всегда будет 0, если сообщение было введено в личные сообщения бота либо в консоль
+     * @return Conversation|null Объект беседы. Всегда будет null, если сообщение было введено в личные сообщения бота либо в консоль
      */
-    public function GetConversationId() : int
+    public function GetConversation() : ?Conversation
     {
-        return $this->ConversationId;
+        return $this->Conversation;
     }
 
     /**
-     * Получить идентификатор беседы + 2000000000, в которую команда была введена
-     *
-     * @return int Идентификатор беседы + 2000000000. Всегда будет 0, если сообщение было введено в личные сообщения бота либо в консоль
+     * @return ?Message Исходное сообщение пользователя
      */
-    public function GetConversationId2() : int
+    public function GetMessage() : ?Message
     {
-        if ($this->ConversationId == 0)
-        {
-            return 0;
-        }
-
-        return $this->ConversationId + 2000000000;
+        return $this->Message;
     }
 }

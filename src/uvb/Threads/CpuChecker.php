@@ -25,7 +25,7 @@ class CpuChecker extends Thread
             else
             {
                 unset($output);
-                exec("top -b -n 1 -d 0.2 -p " . $this->GetParentThreadPid() . " | tail -1 | awk '{print $9}'", $output, $result_code); // выводит хуйню в консоль. Исправить
+                exec("top -b -n 1 -d 0.5 -p " . $this->GetParentThreadPid() . " | tail -1 | awk '{print $9}'", $output, $result_code); // выводит хуйню в консоль. Исправить
                 $cpu = -1;
                 if (is_array($output) && isset($output[0]))
                 {

@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Events\Messages;
 
 use uvb\Events\Event;
+use uvb\Models\Conversation;
 use uvb\Models\Group;
 use uvb\Models\User;
 
@@ -22,16 +23,16 @@ class UserKickEvent extends Event
     /**
      * @ignore
      */
-    private int $conversationId;
+    private Conversation $conversation;
 
     /**
      * @ignore
      */
-    public function __construct(Group $group, User $kickedBy, User $kicked, int $conversationId)
+    public function __construct(Group $group, User $kickedBy, User $kicked, Conversation $conversation)
     {
         $this->kickedBy = $kickedBy;
         $this->kicked = $kicked;
-        $this->conversationId = $conversationId;
+        $this->conversation = $conversation;
         parent::__construct($group);
     }
 
@@ -58,10 +59,10 @@ class UserKickEvent extends Event
     /**
      * Получить идентификатор беседы
      *
-     * @return int Идентификатор беседы
+     * @return Conversation Идентификатор беседы
      */
-    public function GetConversationId() : int
+    public function GetConversation() : Conversation
     {
-        return $this->conversationId;
+        return $this->conversation;
     }
 }

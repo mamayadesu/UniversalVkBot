@@ -14,7 +14,7 @@ use uvb\Logger;
 use uvb\Main;
 use uvb\Plugin\Plugin;
 use uvb\SystemLogger;
-use uvb\Utils\AsyncCurl;
+use Scheduler\AsyncCurl\Curl;
 
 /**
  * @ignore
@@ -301,14 +301,14 @@ final class Updater
         $this->readyToInstall = false;
         $this->readyToPrepare = false;
         $this->alreadyChecking = true;
-        $async_curl = new AsyncCurl($this->checkUrl);
+        $async_curl = new Curl($this->checkUrl);
 
         $ch = $async_curl->GetCurlHandle();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
-        $async_curl->ExecutedCallback = function(string $result, $ch) : void
+        $async_curl->OnLoad = function(string $result, $ch) : void
         {
             $this->alreadyChecking = false;
             $http_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);

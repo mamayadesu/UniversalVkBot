@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Handlers;
 
 use uvb\cmm;
+use uvb\Models\Conversation;
 use uvb\Models\Group;
 use uvb\System\SystemConfig;
 use uvb\ConversationIdsResource;
@@ -51,13 +52,13 @@ class SystemCommandsHandler extends Plugin
         $commands = [
             new CommandInfo("help", cmm::g("command.commands.private.help"), true, $this),
             new CommandInfo("stop", cmm::g("command.commands.private.stop"), false, $this),
+            new CommandInfo("admin", cmm::g("command.commands.private.admin"), false, $this),
+            new CommandInfo("unadmin", cmm::g("command.commands.private.unadmin"), false, $this),
             new CommandInfo("restart", cmm::g("command.commands.private.restart"), false, $this),
             new CommandInfo("update", cmm::g("command.commands.private.update"), false, $this),
             new CommandInfo("plugins", cmm::g("command.commands.private.plugins"), false, $this),
             new CommandInfo("status", cmm::g("command.commands.private.status"), false, $this),
             new CommandInfo("setlanguage", cmm::g("command.commands.private.setlanguage"), false, $this),
-            new CommandInfo("banip", cmm::g("command.commands.private.banip"), false, $this),
-            new CommandInfo("unbanip", cmm::g("command.commands.private.unbanip"), false, $this),
             new CommandInfo("confirmresponse", cmm::g("command.commands.private.confirmresponse"), false, $this)
         ];
 
@@ -127,11 +128,50 @@ class SystemCommandsHandler extends Plugin
         $name = $cmd->GetName();
         $user = $cmd->GetUser();
         $args = $cmd->GetArguments();
-        $ab = $this->GetBot()->GetAddressBlocker();
         switch ($name)
         {
             case "help":
                 $user->Send($this->PrivateOutput($user, $group), $group);
+                break;
+
+            case "admin":
+                $vk_id = isset($args[0]) ? intval($args[0]) : 0;
+
+                if ($vk_id < 1)
+                {
+                    $user->Send(cmm::g("command.admin.invalid"));
+                    break;
+                }
+
+                $user_to_admin = User::Get($vk_id);
+                if ($user_to_admin === null)
+                {
+                    $user->Send(cmm::g("command.admin.invalid_user"));
+                    break;
+                }
+
+                $user_to_admin->SetAdmin(true);
+                $user->Send(cmm::g("command.admin.success", [$user_to_admin->GetFirstName() . " " . $user_to_admin->GetLastName()]));
+                break;
+
+            case "unadmin":
+                $vk_id = isset($args[0]) ? intval($args[0]) : 0;
+
+                if ($vk_id < 1)
+                {
+                    $user->Send(cmm::g("command.admin.invalid"));
+                    break;
+                }
+
+                $user_to_admin = User::Get($vk_id);
+                if ($user_to_admin === null)
+                {
+                    $user->Send(cmm::g("command.admin.invalid_user"));
+                    break;
+                }
+
+                $user_to_admin->SetAdmin(false);
+                $user->Send(cmm::g("command.unadmin.success", [$user_to_admin->GetFirstName() . " " . $user_to_admin->GetLastName()]));
                 break;
 
             case "stop":
@@ -140,6 +180,11 @@ class SystemCommandsHandler extends Plugin
                 break;
 
             case "restart":
+                if (!$this->GetBot()->IsRestartSupported())
+                {
+                    $user->Send(cmm::g("main.restart_is_not_supported"));
+                    return;
+                }
                 $user->Send(cmm::g("main.restarting"), $group);
                 $this->GetBot()->Reboot();
                 break;
@@ -178,40 +223,6 @@ class SystemCommandsHandler extends Plugin
                 }
                 break;
 
-            case "banip":
-                if (!isset($args[0]))
-                {
-                    $user->Send(cmm::g("command.banip.noargs"), $group);
-                    return;
-                }
-                if ($ab->IsBanned($args[0], true))
-                {
-                    $user->Send(cmm::g("command.banip.alreadybanned"), $group);
-                    return;
-                }
-                if (!$ab->Ban($args[0]))
-                {
-                    $user->Send(cmm::g("command.banip.invalidip"), $group);
-                    return;
-                }
-                $user->Send(cmm::g("command.banip.ok"), $group);
-                break;
-
-            case "unbanip":
-                if (!isset($args[0]))
-                {
-                    $user->Send(cmm::g("command.unbanip.noargs"), $group);
-                    return;
-                }
-                if (!$ab->IsBanned($args[0], true))
-                {
-                    $user->Send(cmm::g("command.unbanip.notbanned"), $group);
-                    return;
-                }
-                $ab->Unban($args[0]);
-                $user->Send(cmm::g("command.unbanip.ok"), $group);
-                break;
-
             case "confirmresponse":
                 if (!isset($args[0]))
                 {
@@ -229,7 +240,7 @@ class SystemCommandsHandler extends Plugin
         }
     }
 
-    public function OnConversationCommand(Command $cmd, int $conversationId, Group $group) : void
+    public function OnConversationCommand(Command $cmd, Conversation $conversation, Group $group) : void
     {
         $name = $cmd->GetName();
         $user = $cmd->GetUser();
@@ -238,13 +249,17 @@ class SystemCommandsHandler extends Plugin
         switch ($name)
         {
             case "help":
-                Message::SendToConversation($this->ConversationOutput($user, $group), $conversationId, [], $group);
+                if (!SystemConfig::Get("enable_help_command_for_conversations"))
+                {
+                    return;
+                }
+                Message::SendToConversation($this->ConversationOutput($user, $group), $conversation, [], $group);
                 break;
 
             case "conversationid":
-                $output = cmm::g("command.conversationid", [$conversationId, ($conversationId - 2000000000)]);
-                $cid = $cids->Get($conversationId);
-                if ($cids->Get($conversationId) > 0)
+                $output = cmm::g("command.conversationid", [$conversation->GetName(), $conversation->GetId(false), $conversation->GetId(true)]);
+                $cid = $cids->Get($conversation->GetId(false));
+                if ($cids->Get($conversation->GetId(false)) > 0)
                 {
                     $output .= cmm::g("command.adminconvidequivalent", [$cid]);
                 }
@@ -267,7 +282,7 @@ class SystemCommandsHandler extends Plugin
                     $user->Send(cmm::g("command.conversationidtoosmall"), $group);
                     return;
                 }
-                $cids->Set($conversationId, $cid);
+                $cids->Set($conversation->GetId(false), $cid);
                 $cids->Save();
                 $user->Send(cmm::g("command.addconversationiddone"), $group);
                 break;

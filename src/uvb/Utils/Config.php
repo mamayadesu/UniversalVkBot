@@ -44,7 +44,7 @@ class Config
         if (!file_exists($path))
         {
             $this->f = fopen($path, "a");
-            fwrite($this->f, json_encode($defaultData, JSON_PRETTY_PRINT));
+            fwrite($this->f, json_encode($defaultData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             $this->data = $defaultData;
         }
         else

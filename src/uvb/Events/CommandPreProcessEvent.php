@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Events;
 
 use uvb\Models\Command;
+use uvb\Models\Conversation;
 use uvb\Models\Group;
 
 /**
@@ -26,16 +27,16 @@ class CommandPreProcessEvent extends Event
     /**
      * @ignore
      */
-    private int $conversationId;
+    private ?Conversation $conversation;
 
     /**
      * @ignore
      */
-    public function __construct(Group $group, Command $command, bool $isPrivate, int $conversationId)
+    public function __construct(Group $group, Command $command, bool $isPrivate, ?Conversation $conversation)
     {
         $this->command = $command;
         $this->isPrivate = $isPrivate;
-        $this->conversationId = $conversationId;
+        $this->conversation = $conversation;
         $this->isCancellable = true;
         parent::__construct($group);
     }
@@ -63,10 +64,10 @@ class CommandPreProcessEvent extends Event
     /**
      * Получить идентификатор беседы
      *
-     * @return int Идентификатор беседы
+     * @return Conversation|null Идентификатор беседы
      */
-    public function GetConversationId() : int
+    public function GetConversation() : ?Conversation
     {
-        return $this->conversationId;
+        return $this->conversation;
     }
 }

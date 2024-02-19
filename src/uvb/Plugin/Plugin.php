@@ -19,8 +19,11 @@ use uvb\Events\Messages\NewPrivateMessageEvent;
 use uvb\Events\Messages\NewConversationMessageEvent;
 use uvb\Events\ServerRequestEvent;
 use uvb\Events\UnregisteredVkEvent;
+use uvb\Events\Wall\NewCommentEvent;
+use uvb\Events\Wall\NewPostEvent;
 use uvb\Logger;
 use uvb\Models\Command;
+use uvb\Models\Conversation;
 use uvb\Models\Group;
 
 /**
@@ -229,6 +232,8 @@ abstract class Plugin
 
     /**
      * Завершить работу текущего плагина
+     *
+     * @return void
      */
     final function DisablePlugin() : void
     {
@@ -237,6 +242,8 @@ abstract class Plugin
 
     /**
      * Метод вызывается менеджером плагинов при запуске плагина. Аналог метода `__construct`. Может быть переопределён плагином
+     *
+     * @return void
      */
     public function OnEnable() : void
     {
@@ -245,6 +252,8 @@ abstract class Plugin
 
     /**
      * Метод вызывается при завершении работы плагина. Аналог метода `__destruct`. Может быть переопределён плагином
+     *
+     * @return void
      */
     public function OnDisable() : void
     {
@@ -256,6 +265,7 @@ abstract class Plugin
      * Неотменяемое
      *
      * @param NewPrivateMessageEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnNewPrivateMessage(NewPrivateMessageEvent $event) : void
     {
@@ -266,6 +276,7 @@ abstract class Plugin
      * Событие. Новое входящее сообщение в беседу.
      *
      * @param NewConversationMessageEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnNewConversationMessage(NewConversationMessageEvent $event) : void
     {
@@ -277,6 +288,7 @@ abstract class Plugin
      * Неотменяемое
      *
      * @param UserAddEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnUserAdd(UserAddEvent $event) : void
     {
@@ -288,6 +300,7 @@ abstract class Plugin
      * Неотменяемое
      *
      * @param UserJoinEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnUserJoin(UserJoinEvent $event) : void
     {
@@ -299,6 +312,7 @@ abstract class Plugin
      * Неотменяемое
      *
      * @param UserLeftEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnUserLeft(UserLeftEvent $event) : void
     {
@@ -310,6 +324,7 @@ abstract class Plugin
      * Неотменяемое
      *
      * @param UserKickEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnUserKick(UserKickEvent $event) : void
     {
@@ -321,6 +336,7 @@ abstract class Plugin
      * Неотменяемое
      *
      * @param BotJoinEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnBotJoin(BotJoinEvent $event) : void
     {
@@ -332,6 +348,7 @@ abstract class Plugin
      * Неотменяемое
      *
      * @param BotLeftEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnBotLeft(BotLeftEvent $event) : void
     {
@@ -343,6 +360,7 @@ abstract class Plugin
      * Отменяемое
      *
      * @param CommandPreProcessEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnCommandPreProcess(CommandPreProcessEvent $event) : void
     {
@@ -356,6 +374,7 @@ abstract class Plugin
      *
      * @param Command $cmd Объект, описывающий введённую команду
      * @param Group $group Группа, к которой принадлежит событие
+     * @return void
      */
     public function OnCommand(Command $cmd, Group $group) : void
     {
@@ -368,10 +387,11 @@ abstract class Plugin
      * Поэтому если в плагине всего одна команда, в теле метода необязательно уточнять какая именно команда была введена
      *
      * @param Command $cmd Объект, описывающий исполняемую команду с её аргументами
-     * @param int $conversationId Идентификатор беседы
+     * @param Conversation $conversation Объект беседы
      * @param Group $group Группа, к которой принадлежит событие
+     * @return void
      */
-    public function OnConversationCommand(Command $cmd, int $conversationId, Group $group) : void
+    public function OnConversationCommand(Command $cmd, Conversation $conversation, Group $group) : void
     {
 
     }
@@ -381,6 +401,7 @@ abstract class Plugin
      * Отменяемое
      *
      * @param UserJoinGroupEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnUserJoinGroup(UserJoinGroupEvent $event) : void
     {
@@ -392,8 +413,33 @@ abstract class Plugin
      * Неотменяемое
      *
      * @param UserLeftGroupEvent $event Объект, описывающий событие
+     * @return void
      */
     public function OnUserLeftGroup(UserLeftGroupEvent $event) : void
+    {
+
+    }
+
+    /**
+     * Событие. Новая запись на стене сообщества
+     * Отменяемое
+     *
+     * @param NewPostEvent $event
+     * @return void
+     */
+    public function OnNewPost(NewPostEvent $event) : void
+    {
+
+    }
+
+    /**
+     * Событие. Новый комментарий на стене сообщества
+     * Отменяемое
+     *
+     * @param NewCommentEvent $event
+     * @return void
+     */
+    public function OnNewComment(NewCommentEvent $event) : void
     {
 
     }
@@ -434,6 +480,6 @@ abstract class Plugin
             return true;
         }
 
-        return in_array("club" . $group->GetVkId(), $settings[$this->GetPluginName()]);
+        return in_array("club" . (-$group->GetVkId()), $settings[$this->GetPluginName()]);
     }
 }

@@ -4,6 +4,8 @@ declare(ticks = 1);
 namespace uvb\Models;
 
 use Exception;
+use Throwable;
+use uvb\Admins;
 use uvb\Bot;
 use uvb\cmm;
 use uvb\System\SystemConfig;
@@ -354,7 +356,25 @@ final class User implements Entity
             return true;
         }
 
-        return in_array($this->GetVkId(), SystemConfig::Get("admins"));
+        return in_array($this->GetVkId(), Admins::GetAdmins());
+    }
+
+    /**
+     * Назначить или убрать из списка администраторов аккаунт VK
+     *
+     * @param bool $set
+     * @return void
+     */
+    public function SetAdmin(bool $set = true) : void
+    {
+        if ($set)
+        {
+            Admins::AddAdmin($this->GetVkId());
+        }
+        else
+        {
+            Admins::RemoveAdmin($this->GetVkId());
+        }
     }
 
     /**
@@ -377,6 +397,25 @@ final class User implements Entity
         catch (Exception $e)
         {
             Bot::GetInstance()->GetLogger()->Log("(User::Send) " . cmm::g("user.sendmessage.error", [$this->GetMention(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]));
+        }
+    }
+
+    public function Unban(Group $group) : void
+    {
+        $groups = Group::GetApi();
+
+        $groups_unbanParams = array(
+            "group_id" => $group->GetVkId(),
+            "owner_id" => $this->GetVkId()
+        );
+
+        try
+        {
+            $groups->unban(SystemConfig::Get("main_admin_access_token"), $groups_unbanParams);
+        }
+        catch (Throwable $e)
+        {
+            Bot::GetInstance()->GetLogger()->Critical("Failed to unban user '" . $this->GetVkId() . "' in group '" . $group->GetVkId() . "'. " . $e->getMessage());
         }
     }
 
@@ -591,8 +630,8 @@ final class User implements Entity
             ),
             $profile["sex"] ?? UserSex::UNKNOWN,
             $profile["bdate"] ?? "",
-            $profile["city"] ? $profile["city"]["title"] : "",
-            $profile["county"] ? $profile["country"]["title"] : "",
+            isset($profile["city"]) ? $profile["city"]["title"] : "",
+            isset($profile["county"]) ? $profile["country"]["title"] : "",
             $profile["domain"] ?? "",
             $profile["status"] ?? ""
         );

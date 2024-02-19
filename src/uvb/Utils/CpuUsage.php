@@ -63,7 +63,7 @@ class CpuUsage
         if (IS_WINDOWS) return 0;
         $me = self::$instance;
         $time = intval(microtime(true) * 1000);
-        if ($time >= $me->lastCpuChecked + 100)
+        if ($time >= $me->lastCpuChecked + 500)
         {
             $me->lastCpuChecked = $time;
             $me->cpu = $me->sga->Get(["cpu_usage"]);

@@ -8,6 +8,7 @@ use Data\String\ColoredString;
 use Data\String\ForegroundColors;
 use \Exception;
 use HttpServer\Exceptions\ServerStartException;
+use HttpServer\ServerEvents;
 use IO\Console;
 use Scheduler\AsyncTask;
 use Scheduler\NoAsyncTaskParameters;
@@ -30,21 +31,26 @@ use uvb\Events\Messages\UserKickEvent;
 use uvb\Events\Messages\UserLeftEvent;
 use uvb\Events\ServerRequestEvent;
 use uvb\Events\UnregisteredVkEvent;
+use uvb\Events\Wall\NewCommentEvent;
+use uvb\Events\Wall\NewPostEvent;
+use uvb\Handlers\GroupWall;
 use uvb\Handlers\InGroupUserAction;
 use uvb\Handlers\SystemCommandsHandler;
 use uvb\Handlers\Common;
 use uvb\Models\Attachments\AttachmentTypes;
 use uvb\Models\Command;
+use uvb\Models\Conversation;
 use uvb\Models\Entity;
 use uvb\Models\Geolocation;
 use uvb\Models\Group;
 use uvb\Models\Message;
 use uvb\Models\User;
 use uvb\Models\UserSex;
+use uvb\Models\Wall\Comment;
+use uvb\Models\Wall\Post;
 use uvb\Plugin\CommandManager;
 use uvb\Plugin\Plugin;
 use uvb\Plugin\PluginManager;
-use uvb\Protection\AddressBlocker;
 use uvb\Services\RamController;
 use uvb\Services\ResourcesWatcher;
 use uvb\Services\UserCache;
@@ -98,6 +104,7 @@ final class Main
     private static User $consoleUser;
     public SystemCommandsHandler $sch;
     public InGroupUserAction $inGroupUserAction;
+    public GroupWall $groupWall;
     public ?Server $server = null;
     private SystemLogger $sl;
     private Logger $logger;
@@ -144,6 +151,13 @@ final class Main
             $colorsEnabled = false;
         }
 
+        $restart_supported = false;
+
+        if ((isset($pargs["arguments"]["restartsupported"]) && in_array($pargs["arguments"]["restartsupported"], ["true", "1", "yes"])) || isset($pargs["uninitialized_keys"]["restartsupported"]))
+        {
+            $restart_supported = true;
+        }
+
         // служба кэширования пользователей
         $this->userCache = new UserCache($this);
 
@@ -155,7 +169,7 @@ final class Main
 
         $this->updater = new Updater($this, $this->logger, $this->sl);
 
-        $this->bot = new Bot($this, $this->logger, new Logger("CONSOLE", $this->sl), $this->sl);
+        $this->bot = new Bot($this, $this->logger, new Logger("CONSOLE", $this->sl), $this->sl, $restart_supported);
         new AsyncTask($this, 50, false, [$this, "UpdateTitle"]);
         // устанавливаем свой обработчик Ctrl+C
         if (IS_WINDOWS)
@@ -182,10 +196,6 @@ final class Main
 
         // загружаем config.json
         $this->LoadData();
-        if (!in_array(0, $this->config["admins"]))
-        {
-            $this->config["admins"][] = 0;
-        }
         SystemConfigResource::Init($this->config);
 
         /**
@@ -196,23 +206,23 @@ final class Main
          */
         cmm::l("main.startinghttpserver"); 
         $this->server = new Server(SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")); 
-        $this->server->On("start", function(Server $server) { $this->Server_Start($server);}); 
-        $this->server->On("shutdown", function(Server $server) { $this->Server_Stop($server);}); 
-        $this->server->On("request", function(Request $request, Response $response, Server $server)
+        $this->server->On(ServerEvents::Start, function(Server $server) { $this->Server_Start($server);});
+        $this->server->On(ServerEvents::Shutdown, function(Server $server) { $this->Server_Stop($server);});
+        $this->server->On(ServerEvents::Request, function(Request $request, Response $response, Server $server)
         {
             // в случае какой-то необработанно ошибки, кидаем 500 ошибку,
             // чтобы клиент не ждал бесконечное количество лет
             $this->Server_Request($request, $response, $server);
         });
 
-        $this->server->On("throwable", function(Request $request, Response $response, Throwable $throwable, Server $server) : void
+        $this->server->On(ServerEvents::Throwable, function(Request $request, Response $response, Throwable $throwable, Server $server) : void
         {
             if (!$response->IsClosed())
             {
                 $response->Status(500);
                 $response->End("Internal Server Error");
             }
-            Bot::GetInstance()->GetLogger()->Error("Failed to proceed HTTP-request. Uncaught " . get_class($throwable) . ". '" . $throwable->getMessage() . "'");
+            Bot::GetInstance()->GetLogger()->Error("Failed to proceed HTTP-request. Uncaught " . get_class($throwable) . ". '" . $throwable->getMessage() . "' in " . $throwable->getFile() . " on line " . $throwable->getLine());
         });
 
         /**
@@ -229,6 +239,7 @@ final class Main
         {
             $this->bot->GetLogger()->Critical("*******************************");
             cmm::c("bot.failedtobindport", [SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")]);
+            Bot::GetInstance()->GetLogger()->Critical($e->getMessage());
             $this->bot->GetLogger()->Critical("*******************************");
             sleep(1);
             cmm::l("bot.shuttingdown");
@@ -370,7 +381,8 @@ final class Main
         $this->resourcesWatcher = new ResourcesWatcher();
         $this->api = new VKApiClient();
         $this->newMessage = new NewMessage($this); 
-        $this->commandHandler = new CommandHandler($this); 
+        $this->commandHandler = new CommandHandler($this);
+        $this->groupWall = new GroupWall($this);
         $this->common = new Common($this);
         $this->pluginManager = new PluginManager($this, $this->sl); 
         $this->commandManager = new CommandManager($this); 
@@ -472,8 +484,8 @@ final class Main
 
     private function UpdateTitleNotStarted() : string
     {
-        $cpu = $this->bot->GetCpuUsage();
-        $title = "UniversalVkBot | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
+        $cpu = $this->bot->GetCpuUsageAsString();
+        $title = "UVB | RAM: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
         if (!IS_WINDOWS) $title .= " | CPU " . $cpu . "%";
         return $title;
     }
@@ -484,8 +496,8 @@ final class Main
         $uptime_text = cmm::g("main.uptime", [$puptime["d"], $puptime["h"], $puptime["m"], $puptime["s"]]);
 
         $title = "";
-        $cpu = $this->bot->GetCpuUsage();
-        $title = "UVB | Uptime: " . $uptime_text . " | RAM usage: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
+        $cpu = $this->bot->GetCpuUsageAsString();
+        $title = "UVB | Up: " . $uptime_text . " | RAM: " . Main::GetFormattedMemory($this->ramController->GetUsage()) . " / " . Main::GetFormattedMemory($this->ramController->GetAllocatedMemory()) . " (" . $this->ramController->GetUsagePercent() . "%) | Users cached: " . count($this->userCache->GetUsers());
         if (!IS_WINDOWS) $title .= " | CPU " . $cpu . "%";
         return $title;
     }
@@ -495,7 +507,7 @@ final class Main
         $memory_usage = "";
         if ($mu == -1)
         {
-            return "∞";
+            return "INF";
         }
         if ($mu < 1024)
         {
@@ -537,46 +549,15 @@ final class Main
 
     private function Server_Request(Request $request, Response $response, Server $server) : void
     {
+        $response->DataSendTimeout = 2;
         if ($this->bot->IsShuttingDown())
         {
+            $response->ClientNonBlockMode = true;
             $response->Header("Content-Type", "text/plain");
             $response->End("Bot is shutting down");
             return;
         }
         $data = json_decode($request->GetRawContent(), true);
-        $AllowedAddresses = ["127.0.0.1", SystemConfig::Get("server_addr"), "192.168.1.1", "192.168.100.1", "192.168.0.1"];
-        if (!in_array($request->RemoteAddress, $AllowedAddresses))
-        {
-            if ($this->bot->GetAddressBlocker()->IsBanned($request->RemoteAddress))
-            {
-                $response->Status(308);
-                $response->Header("Location", "https://google.ru");
-                $response->End("");
-                return;
-            }
-            $uriCheck1 = AddressBlocker::UriHasThreat($request->RequestUri);
-            $uriCheck2 = AddressBlocker::UriHasThreat($request->GetRawContent());
-            if ($uriCheck1 || ($uriCheck2 && ($data == null || !isset($data["secret"]) || !isset($data["group_id"]))))
-            {
-                $response->Status(308);
-                $response->Header("Location", "https://google.ru");
-                $response->End("");
-                $this->bot->GetAddressBlocker()->Ban($request->RemoteAddress);
-                $this->bot->GetAddressBlocker()->Save();
-                $uhtmsg = "";
-                if ($uriCheck1)
-                {
-                    $uhtmsg = "request.threatdetected";
-                }
-                else
-                {
-                    $uhtmsg = "request.bodythreatdetected";
-                }
-                cmm::w("request.threatdetected", [$request->RemoteAddress]);
-                $this->bot->GetLogger()->Warn($request->RequestUri);
-                return;
-            }
-        }
         $secret_keys = SystemConfig::Get("groups_to_secret_keys");
         $is_valid_secret_key = !(!isset($data["secret"]) || !isset($data["group_id"]) || !isset($secret_keys["club" . $data["group_id"]]) || $secret_keys["club" . $data["group_id"]] != $data["secret"]);
         $group = null;
@@ -595,12 +576,14 @@ final class Main
         $response->Header("Content-Type", "text/plain");
         if ($request->RequestUri != "/" . Bot::REQUEST_URI)
         {
+            $response->ClientNonBlockMode = true;
             $response->End("Wrong URI");
             return;
         }
 
         if ($data == null)
         {
+            $response->ClientNonBlockMode = true;
             $response->End("Bad request");
             return;
         }
@@ -628,7 +611,10 @@ final class Main
         {
             $obj = array();
             $event = null;
-            $response->End("ok");
+            if (!$response->IsClosed())
+            {
+                $response->End("ok");
+            }
 
             switch ($data["type"])
             {
@@ -669,49 +655,52 @@ final class Main
                     {
                         if ($obj["action"]["type"] == "chat_invite_user")
                         {
+                            $conversation = Conversation::Get($peer_id, $group);
                             if ($obj["action"]["member_id"] < 0)
                             {
-                                $event = new BotJoinEvent($group, $from, Group::Get($obj["action"]["member_id"]), $peer_id);
+                                $event = new BotJoinEvent($group, $from, Group::Get($obj["action"]["member_id"]), $conversation);
                                 $this->newMessage->OnBotJoin($event);
                             }
                             else if ($obj["action"]["member_id"] > 0 && $obj["action"]["member_id"] != $fromId)
                             {
-                                $event = new UserAddEvent($group, $from, User::Get($obj["action"]["member_id"]), $peer_id);
+                                $event = new UserAddEvent($group, $from, User::Get($obj["action"]["member_id"]), $conversation);
                                 $this->newMessage->OnUserAdd($event);
                             }
                             else if ($obj["action"]["member_id"] == $fromId)
                             {
-                                $event = new UserJoinEvent($group, $from, $peer_id);
+                                $event = new UserJoinEvent($group, $from, $conversation);
                                 $this->newMessage->OnUserJoin($event);
                             }
                         }
                         else if ($obj["action"]["type"] == "chat_kick_user")
                         {
+                            $conversation = Conversation::Get($peer_id, $group);
                             if ($obj["action"]["member_id"] > 0)
                             {
                                 if ($obj["action"]["member_id"] != $fromId)
                                 {
-                                    $event = new UserKickEvent($group, $from, User::Get($obj["action"]["member_id"]), $peer_id);
+                                    $event = new UserKickEvent($group, $from, User::Get($obj["action"]["member_id"]), $conversation);
                                     $this->newMessage->OnUserKick($event);
                                 }
                                 else
                                 {
-                                    $event = new UserLeftEvent($group, $from, $peer_id);
+                                    $event = new UserLeftEvent($group, $from, $conversation);
                                     $this->newMessage->OnUserLeft($event);
                                 }
                             }
                             else if ($obj["action"]["member_id"] < 0)
                             {
-                                $event = new BotLeftEvent($group, $from, Group::Get($obj["action"]["member_id"]), $peer_id);
+                                $event = new BotLeftEvent($group, $from, Group::Get($obj["action"]["member_id"]), $conversation);
                                 $this->newMessage->OnBotLeft($event);
                             }
                         }
                         break;
                     }
+                    $conversation = $peer_id > 2000000000 ? Conversation::Get($peer_id, $group) : null;
 
                     try
                     {
-                        $inboxMsg = new Message($msgid, $date, $from, Group::Get($data["group_id"]), $text, $peer_id, $attachments, $conversation_message_id, $geolocation);
+                        $inboxMsg = new Message($msgid, $date, $from, $group, $text, $peer_id, $attachments, $conversation, $geolocation);
                     }
                     catch (\Exception $e)
                     {
@@ -728,8 +717,8 @@ final class Main
                             $arrcmd = explode(' ', $rawcmd);
                             $cmdname = $arrcmd[0];
                             array_shift($arrcmd);
-                            $cmd = new Command($cmdname, $arrcmd, $from, 0);
-                            $event = new CommandPreProcessEvent($group, $cmd, true, $peer_id);
+                            $cmd = new Command($cmdname, $arrcmd, $from, $inboxMsg, null);
+                            $event = new CommandPreProcessEvent($group, $cmd, true, null);
                             $this->newMessage->OnCommandPreProcess($event);
                             if (!$event->IsCancelled())
                             {
@@ -744,23 +733,24 @@ final class Main
                     }
                     else
                     {
+                        $conversation = Conversation::Get($peer_id, $group);
                         if (substr($text, 0, 1) == "/")
                         {
                             $rawcmd = substr($text, 1, strlen($text) - 1);
                             $arrcmd = explode(' ', $rawcmd);
                             $cmdname = $arrcmd[0];
                             array_shift($arrcmd);
-                            $cmd = new Command($cmdname, $arrcmd, $from, $peer_id);
-                            $event = new CommandPreProcessEvent($group, $cmd, false, $peer_id);
+                            $cmd = new Command($cmdname, $arrcmd, $from, $inboxMsg, $conversation);
+                            $event = new CommandPreProcessEvent($group, $cmd, false, $conversation);
                             $this->newMessage->OnCommandPreProcess($event);
                             if (!$event->IsCancelled())
                             {
-                                $this->commandHandler->OnConversationCommand($cmd, $peer_id, $group);
+                                $this->commandHandler->OnConversationCommand($cmd, $conversation, $group);
                             }
                         }
                         else
                         {
-                            $event = new NewConversationMessageEvent($group, $inboxMsg, $peer_id, $request->GetRawContent());
+                            $event = new NewConversationMessageEvent($group, $inboxMsg, $conversation, $request->GetRawContent());
                             $this->newMessage->OnNewConversationMessage($event);
                         }
                     }
@@ -797,6 +787,81 @@ final class Main
                     $leftBySelf = $obj["self"] == 1;
                     $event = new UserLeftGroupEvent($group, $user, $leftBySelf);
                     $this->inGroupUserAction->OnUserLeftGroup($event);
+                    break;
+
+                case "wall_post_new":
+                    $obj = $data["object"];
+
+                    $id = $obj["id"];
+                    $date = $obj["date"];
+                    $text = $obj["text"] ?? "";
+                    $ads = !!($obj["marked_as_ads"] ?? false);
+                    if ($obj["from_id"] < 0)
+                    {
+                        $from = Group::Get($obj["from_id"]);
+                    }
+                    else
+                    {
+                        $from = User::Get($obj["from_id"]);
+                    }
+                    if ($obj["owner_id"] < 0)
+                    {
+                        $owner = Group::Get($obj["owner_id"]);
+                    }
+                    else
+                    {
+                        $owner = User::Get($obj["owner_id"]);
+                    }
+                    $created = User::Get($obj["created_by"]);
+                    $attachments = $obj["attachments"] ?? [];
+
+                    $post = Post::Factory($id, $owner, $date, $text, $ads, $from, $created, $attachments);
+                    $event = new NewPostEvent($group, $post);
+                    $this->groupWall->OnNewPost($event);
+                    break;
+
+                case "wall_reply_new":
+                    $obj = $data["object"];
+
+                    $id = $obj["id"];
+                    $date = $obj["date"];
+                    $text = $obj["text"] ?? "";
+                    if ($obj["owner_id"] < 0)
+                    {
+                        $owner = Group::Get($obj["owner_id"]);
+                    }
+                    else
+                    {
+                        $owner = User::Get($obj["owner_id"]);
+                    }
+                    $post = Post::Factory($obj["post_id"], $owner);
+
+                    if ($obj["from_id"] < 0)
+                    {
+                        $from = Group::Get($obj["from_id"]);
+                    }
+                    else
+                    {
+                        $from = User::Get($obj["from_id"]);
+                    }
+
+                    $attachments = $obj["attachments"] ?? [];
+
+                    $replyTo = null;
+                    if (isset($obj["reply_to_user"]))
+                    {
+                        $replyTo = $obj["reply_to_user"] < 0 ? Group::Get($obj["reply_to_user"]) : User::Get($obj["reply_to_user"]);
+                    }
+
+                    $replyToComment = null;
+                    if (isset($obj["reply_to_comment"]))
+                    {
+                        $replyToComment = Comment::Factory($obj["reply_to_comment"], $owner);
+                    }
+
+                    $comment = Comment::Factory($id, $owner, $post, $date, $from, $text, $attachments, $replyTo, $replyToComment);
+                    $event = new NewCommentEvent($group, $comment);
+                    $this->groupWall->OnNewComment($event);
                     break;
 
                 default:
@@ -863,7 +928,7 @@ final class Main
         (
             "groups_to_access_tokens" => [
                 "club1234" => "this_is_a_default_group",
-                "club5678" => "access_token_of_default_group"
+                "club5678" => "access_token_of_second_group"
             ],
             "main_admin_access_token" => "",
             "server_addr" => "0.0.0.0",
@@ -872,11 +937,11 @@ final class Main
                 "club1234" => "secret_key_1",
                 "club5678" => "secret_key_2"
             ],
-            "admins" => [
-
-            ],
             "memory_limit" => "512M",
-            "restart_on_ctrl_c" => true
+            "restart_on_ctrl_c" => true,
+            "enable_wall_cache" => true,
+            "enable_help_command_for_conversations" => true,
+            "show_invalid_command_in_conversations" => true
         );
     }
 }

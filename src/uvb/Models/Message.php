@@ -5,6 +5,7 @@ namespace uvb\Models;
 
 use uvb\Bot;
 use uvb\cmm;
+use uvb\Models\Photo\ImageContext;
 use uvb\System\SystemConfig;
 use uvb\System\SystemConfigResource;
 use uvb\Models\Attachments\Attachment;
@@ -37,7 +38,12 @@ final class Message
     /**
      * @ignore
      */
-    private int $MessageId, $Date, $PeerId, $ConversationMessageId;
+    private int $MessageId, $Date, $PeerId;
+
+    /**
+     * @ignore
+     */
+    private ?Conversation $Conversation;
 
     /**
      * @ignore
@@ -68,10 +74,10 @@ final class Message
     /**
      * @ignore
      */
-    public function __construct(int $MessageId, int $Date, User $From, Group $group, string $Text, int $PeerId, array/*<Attachment>*/ $Attachments, int $ConversationMessageId, Geolocation $geolocation = null)
+    public function __construct(int $MessageId, int $Date, User $From, Group $group, string $Text, int $PeerId, array/*<Attachment>*/ $Attachments, ?Conversation $Conversation, Geolocation $geolocation = null)
     {
         $this->MessageId = $MessageId;
-        $this->ConversationMessageId = $ConversationMessageId;
+        $this->Conversation = $Conversation;
         $this->Date = $Date;
         $this->From = $From;
         $this->Text = $Text;
@@ -98,7 +104,7 @@ final class Message
     /**
      * @ignore
      */
-    private static function GetApi() : Messages
+    public static function GetApi() : Messages
     {
         return Bot::GetVkApi()->messages();
     }
@@ -152,11 +158,11 @@ final class Message
     }
 
     /**
-     * @return int Идентификатор сообщения в диалоге
+     * @return ?Conversation Идентификатор сообщения в диалоге
      */
-    public function GetConversationMessageId() : int
+    public function GetConversation() : ?Conversation
     {
-        return $this->ConversationMessageId;
+        return $this->Conversation;
     }
 
     /**
@@ -192,6 +198,10 @@ final class Message
      */
     public function Delete(?Group $group_deleter = null) : bool
     {
+        if ($this->IsPrivate())
+        {
+            throw new Exception("Unable to delete private message");
+        }
         if ($group_deleter === null)
         {
             $group_deleter = $this->Group;
@@ -199,7 +209,7 @@ final class Message
         $api = self::GetApi();
         $deleteParams = array(
             "delete_for_all" => true,
-            "conversation_message_ids" => $this->GetConversationMessageId(),
+            "conversation_message_ids" => $this->GetConversation()->GetId(),
             "peer_id" => $this->GetPeerId()
         );
 
@@ -213,6 +223,101 @@ final class Message
             return false;
         }
         return true;
+    }
+
+    /**
+     * Загружает изображение для отправки пользователю в личные сообщения
+     *
+     * @param ImageContext[] $contexts
+     * @param User $user
+     * @param Group $fromGroup
+     * @return string[] Список загруженных фотографий в формате строк, например `photo-12345_67890`
+     * @throws VKApiException
+     * @throws VKApiMessagesDenySendException
+     * @throws VKClientException
+     */
+    public static function UploadImages(array $contexts, User $user, Group $fromGroup) : array
+    {
+        if (count($contexts) > 10)
+        {
+            throw new Exception("You cannot upload more than 10 attachments!");
+        }
+        foreach ($contexts as $index => $context)
+        {
+            if (!$context instanceof ImageContext)
+            {
+                throw new Exception("ImageContext expected, " . (gettype($context) == "object" ? "object of '" . get_class($context) . "'" : gettype($context)) . " given at index " . $index);
+            }
+
+            if ($context->IsDestroyed())
+            {
+                throw new Exception("ImageContext is destroyed at index " . $index);
+            }
+        }
+        $photos_getMessagesUploadServerParams = [
+            "peer_id" => $user->GetVkId()
+        ];
+
+        $photos = Bot::GetVkApi()->photos();
+        $getMessagesUploadServerResponse = $photos->getMessagesUploadServer($fromGroup->GetAccessToken(), $photos_getMessagesUploadServerParams);
+
+        if (!isset($getMessagesUploadServerResponse["upload_url"]))
+        {
+            throw new Exception("Upload URL wasn't received");
+        }
+        $final_result = [];
+        foreach ($contexts as $index => $context)
+        {
+            $delimiter = "-------------" . uniqid();
+
+            $fileFields = array(
+                "photo." . explode('/', $context->GetMime())[1] => array(
+                    "type" => $context->GetMime(),
+                    "content" => $context->GetBinary()
+                )
+            );
+
+            $data = "";
+            foreach ($fileFields as $name => $file)
+            {
+                $data .= "--" . $delimiter . "\r\n";
+                $data .= "Content-Disposition: form-data; name=\"photo\";" .
+                    " filename=\"" . $name . "\"" . "\r\n";
+                $data .= "Content-Type: " . $file["type"] . "\r\n";
+                $data .= "\r\n";
+                $data .= $file["content"] . "\r\n";
+            }
+
+            $data .= "--" . $delimiter . "--\r\n";
+            $ch = curl_init($getMessagesUploadServerResponse["upload_url"]);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER , array(
+                "Content-Type: multipart/form-data; boundary=" . $delimiter,
+                "Content-Length: " . strlen($data)));
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $result = @json_decode(curl_exec($ch), true);
+            if ($result === null)
+            {
+                throw new Exception("UploadImages: Wrong response from server at context with index " . $index);
+            }
+            if ($result["photo"] == "")
+            {
+                throw new Exception("UploadImages: Image wasn't uploaded. At context with index " . $index);
+            }
+
+            $photos_saveMessagesPhotoParams = array(
+                "server" => $result["server"],
+                "hash" => $result["hash"],
+                "photo" => $result["photo"]
+            );
+
+            $response = $photos->saveMessagesPhoto($fromGroup->GetAccessToken(), $photos_saveMessagesPhotoParams);
+
+            $final_result[] = "photo" . $response[0]["owner_id"] . "_" . $response[0]["id"];
+        }
+
+        return $final_result;
     }
 
     /**
@@ -245,7 +350,7 @@ final class Message
         }
         else
         {
-            Message::SendToConversation($message, $this->PeerId, $attachments, $this->Group, $geolocation);
+            Message::SendToConversation($message, Conversation::Get($this->PeerId, $this->Group), $attachments, $this->Group, $geolocation);
         }
     }
 
@@ -253,7 +358,7 @@ final class Message
      * Отправить сообщение в беседу
      *
      * @param string $message Текст сообщения
-     * @param int $conversationId Идентификатор беседы
+     * @param Conversation $conversation Объект беседы
      * @param array<string> $attachments Список вложений. Массив должен содержать строки в формате <mediatype><owner>_<attachmentid>_<accesskey>
      * @param Geolocation|null $geolocation Геолокация
      * @throws VKApiException
@@ -270,7 +375,7 @@ final class Message
      * @throws VKApiMessagesUserBlockedException
      * @throws VKClientException
      */
-    public static function SendToConversation(string $message, int $conversationId, array $attachments = [], ?Group $by_group = null, ?Geolocation $geolocation = null) : void
+    public static function SendToConversation(string $message, Conversation $conversation, array $attachments = [], ?Group $by_group = null, ?Geolocation $geolocation = null) : void
     {
         if ($by_group === null)
         {
@@ -285,7 +390,7 @@ final class Message
 
         $params = array
         (
-            "peer_id" => $conversationId,
+            "peer_id" => $conversation->GetId(false),
             "message" => $message,
             "random_id" => $random_id
         );

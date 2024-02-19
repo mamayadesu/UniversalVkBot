@@ -4,6 +4,7 @@ declare(ticks = 1);
 namespace uvb\Events\Messages;
 
 use uvb\Events\Event;
+use uvb\Models\Conversation;
 use uvb\Models\Group;
 use uvb\Models\User;
 
@@ -22,15 +23,15 @@ class UserJoinEvent extends Event
     /**
      * @ignore
      */
-    private int $conversationId;
+    private Conversation $conversation;
 
     /**
      * @ignore
      */
-    public function __construct(Group $group, User $joined, int $conversationId)
+    public function __construct(Group $group, User $joined, Conversation $conversation)
     {
         $this->joined = $joined;
-        $this->conversationId = $conversationId;
+        $this->conversation = $conversation;
         parent::__construct($group);
     }
 
@@ -47,10 +48,10 @@ class UserJoinEvent extends Event
     /**
      * Получить идентификатор беседы
      *
-     * @return int Идентификатор беседы
+     * @return Conversation Идентификатор беседы
      */
-    public function GetConversationId() : int
+    public function GetConversation() : Conversation
     {
-        return $this->conversationId;
+        return $this->conversation;
     }
 }

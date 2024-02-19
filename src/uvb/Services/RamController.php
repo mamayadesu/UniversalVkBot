@@ -57,6 +57,12 @@ class RamController
             exec("grep MemTotal /proc/meminfo | awk '{print $2 / 1024}'", $output, $result_code);
             $this->TotalMemory = intval(floatval($output[0]) * 1000000);
         }
+
+        if ($this->TotalMemory == 0)
+        {
+            $this->TotalMemory = -1;
+            Console::WriteLine("Cannot get RAM info of machine.");
+        }
         $this->AllocatedMemory = $this->TotalMemory;
     }
 
@@ -73,14 +79,14 @@ class RamController
      */
     public function GetUsagePercent() : int
     {
-        if ($this->AllocatedMemory == 0)
+        if ($this->AllocatedMemory == -1)
         {
             return 0;
         }
         $usage = memory_get_usage(false);
         $allocated = $this->AllocatedMemory;
 
-        $percent = $usage / $allocated * 100;
+        $percent = floor($usage / $allocated * 100);
         return $percent;
     }
 
@@ -122,7 +128,7 @@ class RamController
         {
             throw new Exception("Allocated memory (" . $memory . ") can be higher than zero or can be -1");
         }
-        if ($memory > $this->TotalMemory)
+        if ($memory > $this->TotalMemory && $this->TotalMemory > 0)
             throw new Exception("Allocated memory (" . $memory . ") cannot be higher than total memory of machine!");
 
         if ($memory == -1)

@@ -8,6 +8,7 @@ use uvb\cmm;
 use uvb\Main;
 use uvb\Models\Command;
 use uvb\Models\CommandInfo;
+use uvb\Models\Conversation;
 use uvb\Models\Group;
 use uvb\Models\Message;
 use \Throwable;
@@ -63,7 +64,7 @@ class CommandHandler
         }
     }
 
-    public function OnConversationCommand(Command $cmd, int $conversationId, Group $group) : void
+    public function OnConversationCommand(Command $cmd, Conversation $conversation, Group $group) : void
     {
         $commands = $this->main->commandManager->GetRegisteredConversationCommands();
         $executor = null;
@@ -79,17 +80,17 @@ class CommandHandler
         }
         if ($executor == null)
         {
-            Message::SendToConversation(cmm::g("command.convunknown", [$user->GetMention(), $cmd->GetName()]), $conversationId, [], $group);
+            Message::SendToConversation(cmm::g("command.convunknown", [$user->GetMention(), $cmd->GetName()]), $conversation, [], $group);
         }
         else if (!$cmdi->IsAllowedForUsers() && !$user->IsAdmin())
         {
-            Message::SendToConversation(cmm::g("command.convnopermission", [$user->GetMention(), $cmd->GetName()]), $conversationId, [], $group);
+            Message::SendToConversation(cmm::g("command.convnopermission", [$user->GetMention(), $cmd->GetName()]), $conversation, [], $group);
         }
         else
         {
             try
             {
-                $executor->OnConversationCommand($cmd, $conversationId, $group);
+                $executor->OnConversationCommand($cmd, $conversation, $group);
             }
             catch (Throwable $e)
             {

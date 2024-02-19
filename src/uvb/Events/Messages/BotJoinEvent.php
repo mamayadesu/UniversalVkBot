@@ -3,6 +3,7 @@ declare(ticks = 1);
 
 namespace uvb\Events\Messages;
 
+use uvb\Models\Conversation;
 use uvb\Models\Group;
 use uvb\Models\User;
 use uvb\Events\Event;
@@ -22,7 +23,7 @@ class BotJoinEvent extends Event
     /**
      * @ignore
      */
-    private int $conversationId;
+    private Conversation $conversation;
 
     /**
      * @ignore
@@ -31,11 +32,15 @@ class BotJoinEvent extends Event
 
     /**
      * @ignore
+     * @param Group $group
+     * @param User $invited
+     * @param Group $joinedGroup
+     * @param Conversation $conversation
      */
-    public function __construct(Group $group, User $invited, Group $joinedGroup, int $conversationId)
+    public function __construct(Group $group, User $invited, Group $joinedGroup, Conversation $conversation)
     {
         $this->invited = $invited;
-        $this->conversationId = $conversationId;
+        $this->conversation = $conversation;
         $this->joinedGroup = $joinedGroup;
         parent::__construct($group);
     }
@@ -53,11 +58,11 @@ class BotJoinEvent extends Event
     /**
      * Получить идентификатор беседы
      *
-     * @return int Идентификатор беседы
+     * @return Conversation Идентификатор беседы
      */
-    public function GetConversationId() : int
+    public function GetConversation() : Conversation
     {
-        return $this->conversationId;
+        return $this->conversation;
     }
 
     /**

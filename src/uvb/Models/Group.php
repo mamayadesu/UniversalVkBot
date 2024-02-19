@@ -49,7 +49,7 @@ final class Group implements Entity
      */
     public function __construct(int $GroupId)
     {
-        if ($GroupId < 0)
+        if ($GroupId > 0)
         {
             $GroupId *= -1;
         }
@@ -57,7 +57,7 @@ final class Group implements Entity
 
         $groups_getByIdParams = array
         (
-            "group_id" => $GroupId
+            "group_id" => abs($GroupId)
         );
 
         $groups = self::GetApi();
@@ -136,7 +136,7 @@ final class Group implements Entity
         $result = [];
         $groups_getMembersParams = array
         (
-            "group_id" => $this->GroupId,
+            "group_id" => abs($this->GroupId),
             "offset" => 0,
             "count" => 1000,
             "fields" => User::UserFilters
@@ -171,6 +171,7 @@ final class Group implements Entity
                         ($item["domain"] ?? ""),
                         ($item["status"] ?? "")
                     );
+                    $userCache->Add($user);
                 }
                 else
                 {
@@ -194,7 +195,7 @@ final class Group implements Entity
     {
         $params = array
         (
-            "group_id" => $this->GroupId,
+            "group_id" => abs($this->GroupId),
             "user_id" => $user->GetVkId()
         );
         try
@@ -216,7 +217,7 @@ final class Group implements Entity
      */
     public function GetAccessToken() : ?string
     {
-        $group_in_config = "club" . $this->GroupId;
+        $group_in_config = "club" . (-$this->GroupId);
 
         if (isset(SystemConfig::Get("groups_to_access_tokens")[$group_in_config]))
         {
@@ -228,7 +229,7 @@ final class Group implements Entity
     /**
      * @ignore
      */
-    private static function GetApi() : Groups
+    public static function GetApi() : Groups
     {
         return Bot::GetVkApi()->groups();
     }
@@ -240,7 +241,7 @@ final class Group implements Entity
 
     public function GetMention() : string
     {
-        return "@club" . $this->GetVkId() . " (" . $this->GetName() . ")";
+        return "@club" . (-$this->GetVkId()) . " (" . $this->GetName() . ")";
     }
 
     public function GetFullMention() : string

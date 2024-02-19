@@ -1,5 +1,4 @@
 <?php
-declare(ticks = 1);
 namespace VK\Actions;
 
 use VK\Actions\Enums\MessagesFilter;
@@ -306,6 +305,10 @@ class Messages {
 	public function getConversations($access_token, array $params = []) {
 		return $this->request->post('messages.getConversations', $access_token, $params);
 	}
+
+    public function getChat($access_token, array $params = []) {
+        return $this->request->post('messages.getChat', $access_token, $params);
+    }
 
 	/**
 	 * Returns conversations by their IDs
