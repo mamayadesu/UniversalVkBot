@@ -45,6 +45,8 @@ class NewConversationMessageEvent extends Event
     /**
      * Получить входящее сообщение
      *
+     * Появилось в API: 1.0
+     *
      * @return Message Объект входящего сообщения
      */
     public function GetInboxMessage() : Message
@@ -54,6 +56,8 @@ class NewConversationMessageEvent extends Event
 
     /**
      * Получить объект беседы
+     *
+     * Появилось в API: 1.0
      *
      * @return Conversation
      */
@@ -65,6 +69,8 @@ class NewConversationMessageEvent extends Event
     /**
      * Получить исходный код данных в виде JSON
      *
+     * Появилось в API: 1.0
+     *
      * @return string Исходный код
      */
     public function GetRawData() : string
@@ -74,6 +80,8 @@ class NewConversationMessageEvent extends Event
 
     /**
      * Отменить событие. Сообщение будет удалено
+     *
+     * Появилось в API: 1.0
      */
     public function SetCancelled() : void
     {

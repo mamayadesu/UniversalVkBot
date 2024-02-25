@@ -50,6 +50,8 @@ class Conversation
     /**
      * Возвращает объект беседы
      *
+     * Появилось в API: 1.0
+     *
      * @param int $conversationId Идентификатор беседы (от лица бота/сообщества)
      * @param Group $group Объект группы
      * @return Conversation
@@ -129,6 +131,8 @@ class Conversation
     /**
      * Возвращает название беседы
      *
+     * Появилось в API: 1.0
+     *
      * @return string
      * @throws Exception
      */
@@ -140,6 +144,8 @@ class Conversation
 
     /**
      * Возвращает список пользователей беседы
+     *
+     * Появилось в API: 1.0
      *
      * @return User[]
      * @throws Exception
@@ -153,6 +159,8 @@ class Conversation
     /**
      * Возвращает ID беседы от лица бота/сообщества (по умолчанию ID беседы + 2000000000)
      *
+     * Появилось в API: 1.0
+     *
      * @param bool $normalize Нормализовать идентификатор беседы (вычитает 2000000000)
      * @return int
      */
@@ -162,7 +170,38 @@ class Conversation
     }
 
     /**
+     * Отправить сообщение в беседу
+     *
+     * Появилось в API: 1.0
+     *
+     * @param string $message Текст сообщения
+     * @param array<string> $attachments Список вложений. Массив должен содержать строки в формате <mediatype><owner>_<attachmentid>_<accesskey>
+     * @param Group|null $by_group От лица какого сообщества отправить сообщение
+     * @param Geolocation|null $geolocation Геолокация
+     * @return void
+     * @throws \VK\Exceptions\Api\VKApiMessagesCantFwdException
+     * @throws \VK\Exceptions\Api\VKApiMessagesChatBotFeatureException
+     * @throws \VK\Exceptions\Api\VKApiMessagesChatUserNoAccessException
+     * @throws \VK\Exceptions\Api\VKApiMessagesContactNotFoundException
+     * @throws \VK\Exceptions\Api\VKApiMessagesDenySendException
+     * @throws \VK\Exceptions\Api\VKApiMessagesKeyboardInvalidException
+     * @throws \VK\Exceptions\Api\VKApiMessagesPrivacyException
+     * @throws \VK\Exceptions\Api\VKApiMessagesTooLongForwardsException
+     * @throws \VK\Exceptions\Api\VKApiMessagesTooLongMessageException
+     * @throws \VK\Exceptions\Api\VKApiMessagesTooManyPostsException
+     * @throws \VK\Exceptions\Api\VKApiMessagesUserBlockedException
+     * @throws \VK\Exceptions\VKApiException
+     * @throws \VK\Exceptions\VKClientException
+     */
+    public function SendMessage(string $message, array $attachments = [], ?Group $by_group = null, ?Geolocation $geolocation = null) : void
+    {
+        Message::SendToConversation($message, $this, $attachments, $by_group, $geolocation);
+    }
+
+    /**
      * Исключить пользователя из беседы
+     *
+     * Появилось в API: 1.0
      *
      * @param User $user
      * @return void

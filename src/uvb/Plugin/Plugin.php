@@ -95,6 +95,8 @@ abstract class Plugin
     /**
      * Получить экземпляр класса
      *
+     * Появилось в API: 1.0
+     *
      * @return Plugin|null Экземпляр главного класса плагина
      */
     final public static function GetInstance() : ?Plugin
@@ -104,6 +106,8 @@ abstract class Plugin
 
     /**
      * Получить название плагина
+     *
+     * Появилось в API: 1.0
      *
      * @return string Название плагина
      */
@@ -115,6 +119,8 @@ abstract class Plugin
     /**
      * Получить версию плагина
      *
+     * Появилось в API: 1.0
+     *
      * @return string Версия плагина
      */
     final public function GetVersion() : string
@@ -124,6 +130,8 @@ abstract class Plugin
 
     /**
      * Получить версию API, которую данный плагин использует
+     *
+     * Появилось в API: 1.0
      *
      * @return string Версия API, которую данный плагин использует
      */
@@ -135,6 +143,8 @@ abstract class Plugin
     /**
      * Получить список плагинов, от которых данный плагин зависит
      *
+     * Появилось в API: 1.0
+     *
      * @return array<string> Список плагинов, от которых данный плагин зависит
      */
     final public function GetDependences() : array
@@ -143,6 +153,8 @@ abstract class Plugin
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool Запущен ли плагин
      */
     final public function IsRunning() : bool
@@ -151,7 +163,9 @@ abstract class Plugin
     }
 
     /**
-     * Получить путь к папке, которую плагин использует для хранения своих данных (файлы конфигурации плагина и прочее
+     * Получить путь к папке, которую плагин использует для хранения своих данных (файлы конфигурации плагина и прочее)
+     *
+     * Появилось в API: 1.0
      *
      * @return string Путь к папке
      */
@@ -163,6 +177,8 @@ abstract class Plugin
     /**
      * Получить доступ к системным функциям бота
      *
+     * Появилось в API: 1.0
+     *
      * @return Bot
      */
     final protected function GetBot() : Bot
@@ -172,6 +188,8 @@ abstract class Plugin
 
     /**
      * Получить логгер плагина
+     *
+     * Появилось в API: 1.0
      *
      * @return Logger Логгер плагина
      */
@@ -231,7 +249,9 @@ abstract class Plugin
     }
 
     /**
-     * Завершить работу текущего плагина
+     * Завершить работу плагина
+     *
+     * Появилось в API: 1.0
      *
      * @return void
      */
@@ -243,6 +263,8 @@ abstract class Plugin
     /**
      * Метод вызывается менеджером плагинов при запуске плагина. Аналог метода `__construct`. Может быть переопределён плагином
      *
+     * Появилось в API: 1.0
+     *
      * @return void
      */
     public function OnEnable() : void
@@ -252,6 +274,8 @@ abstract class Plugin
 
     /**
      * Метод вызывается при завершении работы плагина. Аналог метода `__destruct`. Может быть переопределён плагином
+     *
+     * Появилось в API: 1.0
      *
      * @return void
      */
@@ -264,6 +288,8 @@ abstract class Plugin
      * Событие. Новое входящее личное сообщение.
      * Неотменяемое
      *
+     * Появилось в API: 1.0
+     *
      * @param NewPrivateMessageEvent $event Объект, описывающий событие
      * @return void
      */
@@ -274,6 +300,9 @@ abstract class Plugin
 
     /**
      * Событие. Новое входящее сообщение в беседу.
+     * Отменяемое
+     *
+     * Появилось в API: 1.0
      *
      * @param NewConversationMessageEvent $event Объект, описывающий событие
      * @return void
@@ -287,6 +316,8 @@ abstract class Plugin
      * Событие. Пользователь был добавлен в беседу.
      * Неотменяемое
      *
+     * Появилось в API: 1.0
+     *
      * @param UserAddEvent $event Объект, описывающий событие
      * @return void
      */
@@ -298,6 +329,8 @@ abstract class Plugin
     /**
      * Событие. Пользователь присоединился к беседе по ссылке.
      * Неотменяемое
+     *
+     * Появилось в API: 1.0
      *
      * @param UserJoinEvent $event Объект, описывающий событие
      * @return void
@@ -311,6 +344,8 @@ abstract class Plugin
      * Событие. Пользователь покинул беседу.
      * Неотменяемое
      *
+     * Появилось в API: 1.0
+     *
      * @param UserLeftEvent $event Объект, описывающий событие
      * @return void
      */
@@ -322,6 +357,8 @@ abstract class Plugin
     /**
      * Событие. Пользователь был исключён из беседы.
      * Неотменяемое
+     *
+     * Появилось в API: 1.0
      *
      * @param UserKickEvent $event Объект, описывающий событие
      * @return void
@@ -335,6 +372,8 @@ abstract class Plugin
      * Событие. Бот был добавлен в беседу.
      * Неотменяемое
      *
+     * Появилось в API: 1.0
+     *
      * @param BotJoinEvent $event Объект, описывающий событие
      * @return void
      */
@@ -346,6 +385,8 @@ abstract class Plugin
     /**
      * Событие. Бот был исключён из беседы.
      * Неотменяемое
+     *
+     * Появилось в API: 1.0
      *
      * @param BotLeftEvent $event Объект, описывающий событие
      * @return void
@@ -359,6 +400,8 @@ abstract class Plugin
      * Событие. Предварительна обработка команды перед её выполнением.
      * Отменяемое
      *
+     * Появилось в API: 1.0
+     *
      * @param CommandPreProcessEvent $event Объект, описывающий событие
      * @return void
      */
@@ -371,6 +414,8 @@ abstract class Plugin
      * Данный метод вызывает обработчик команд при вводе команды в личные сообщения боту или в консоль.
      * Обработчик команд вызывает данный метод плагина только в том случае, если введённая команда прописана в `plugin.json` в массиве `private_commands`.
      * Поэтому если в плагине всего одна команда, в теле метода необязательно уточнять какая именно команда была введена
+     *
+     * Появилось в API: 1.0
      *
      * @param Command $cmd Объект, описывающий введённую команду
      * @param Group $group Группа, к которой принадлежит событие
@@ -386,6 +431,8 @@ abstract class Plugin
      * Обработчик команд вызывает данный метод плагина только в том случае, если введённая команда прописана в `plugin.json` в массиве `conversation_commands`.
      * Поэтому если в плагине всего одна команда, в теле метода необязательно уточнять какая именно команда была введена
      *
+     * Появилось в API: 1.0
+     *
      * @param Command $cmd Объект, описывающий исполняемую команду с её аргументами
      * @param Conversation $conversation Объект беседы
      * @param Group $group Группа, к которой принадлежит событие
@@ -400,6 +447,8 @@ abstract class Plugin
      * Событие. Пользователь присоединился к сообществу или отправил заявку на вступление в сообщество или заявка была одобрена/отклонена.
      * Отменяемое
      *
+     * Появилось в API: 1.0
+     *
      * @param UserJoinGroupEvent $event Объект, описывающий событие
      * @return void
      */
@@ -411,6 +460,8 @@ abstract class Plugin
     /**
      * Событие. Пользователь покинул сообщество или был исключён.
      * Неотменяемое
+     *
+     * Появилось в API: 1.0
      *
      * @param UserLeftGroupEvent $event Объект, описывающий событие
      * @return void
@@ -424,6 +475,8 @@ abstract class Plugin
      * Событие. Новая запись на стене сообщества
      * Отменяемое
      *
+     * Появилось в API: 1.0
+     *
      * @param NewPostEvent $event
      * @return void
      */
@@ -436,6 +489,8 @@ abstract class Plugin
      * Событие. Новый комментарий на стене сообщества
      * Отменяемое
      *
+     * Появилось в API: 1.0
+     *
      * @param NewCommentEvent $event
      * @return void
      */
@@ -446,6 +501,9 @@ abstract class Plugin
 
     /**
      * Событие. Незарегистрированное.
+     * Неотменяемое
+     *
+     * Появилось в API: 1.0
      *
      * @param UnregisteredVkEvent $event Объект, описывающий событие
      */
@@ -456,6 +514,7 @@ abstract class Plugin
 
     /**
      * Событие. Запрос на сервер
+     * Неотменяемое
      *
      * @param ServerRequestEvent $event
      * @return void
@@ -467,6 +526,8 @@ abstract class Plugin
 
     /**
      * Включён ли плагин для указанной группы
+     *
+     * Появилось в API: 1.0
      *
      * @param Group $group
      * @return bool

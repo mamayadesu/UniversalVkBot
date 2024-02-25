@@ -84,6 +84,8 @@ final class Bot
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return float Процент использования CPU. Работает только Linux-системах. Для Windows этот метод всегда возвращает ноль.
      */
     public function GetCpuUsage() : float
@@ -91,6 +93,13 @@ final class Bot
         return CpuUsage::GetValue();
     }
 
+    /**
+     * Делает то же самое, что и `GetCpuUsage`, но возвращает значение в виде отформатированной строки
+     *
+     * Появилось в API: 1.0
+     *
+     * @return string
+     */
     public function GetCpuUsageAsString() : string
     {
         $value = CpuUsage::GetValue() . '';
@@ -101,6 +110,13 @@ final class Bot
         return $value;
     }
 
+    /**
+     * Служба контроля потребления оперативной памяти
+     *
+     * Появилось в API: 1.0
+     *
+     * @return RamController
+     */
     public function GetRamController() : RamController
     {
         return $this->main->ramController;
@@ -108,6 +124,8 @@ final class Bot
 
     /**
      * Доступ к системным функциям бота
+     *
+     * Появилось в API: 1.0
      *
      * @return Bot
      */
@@ -118,6 +136,8 @@ final class Bot
 
     /**
      * Устанавливает код подтверждения Callback API
+     *
+     * Появилось в API: 1.0
      *
      * @param string $text
      * @return void
@@ -130,6 +150,8 @@ final class Bot
     /**
      * Возвращает установленный код подтверждения Callback API
      *
+     * Появилось в API: 1.0
+     *
      * @return string
      */
     public function GetConfirmResponse() : string
@@ -139,6 +161,8 @@ final class Bot
 
     /**
      * Получить пользователя по его идентификатору
+     *
+     * Появилось в API: 1.0
      *
      * @param int $vkId Идентификатор пользователя
      * @return User|null Объект пользователя
@@ -151,6 +175,8 @@ final class Bot
     /**
      * Получить пользователей по их идентификаторам
      *
+     * Появилось в API: 1.0
+     *
      * @param array<int> $vkIds Список идентификаторов пользователей. В массиве могут быть только целые числа
      * @return array<User> Объекты пользователей
      */
@@ -162,6 +188,8 @@ final class Bot
     /**
      * Доступ к менеджеру плагинов
      *
+     * Появилось в API: 1.0
+     *
      * @return PluginManager Менеджер плагинов
      */
     public function GetPluginManager() : ?PluginManager
@@ -171,6 +199,8 @@ final class Bot
 
     /**
      * Доступ к менеджеру команд
+     *
+     * Появилось в API: 1.0
      *
      * @return CommandManager Менеджер команд
      */
@@ -182,6 +212,8 @@ final class Bot
     /**
      * Доступ к сервису кэширования пользователей
      *
+     * Появилось в API: 1.0
+     *
      * @return UserCache Сервис кэширования пользователей
      */
     public function GetUserCache() : UserCache
@@ -191,6 +223,8 @@ final class Bot
 
     /**
      * Получить логгер ядра бота
+     *
+     * Появилось в API: 1.0
      *
      * @return Logger Логгер бота
      */
@@ -218,6 +252,8 @@ final class Bot
     /**
      * Выполняет команду от лица какого-либо пользователя или консоли
      *
+     * Появилось в API: 1.0
+     *
      * @param User $user Пользователей, от лица которого будет выполнена команда
      * @param string $command Команда и её аргументы
      */
@@ -244,6 +280,8 @@ final class Bot
     /**
      * Получить группу по умолчанию. Группа по умолчанию - это первая в списке группа в config.json в параметре groups_to_access_tokens
      *
+     * Появилось в API: 1.0
+     *
      * @return Group
      */
     public function GetDefaultGroup() : Group
@@ -263,6 +301,8 @@ final class Bot
     /**
      * Возвращает TRUE, если бот в данный момент выключается
      *
+     * Появилось в API: 1.0
+     *
      * @return bool Выключается ли бот в данный момент
      */
     public function IsShuttingDown() : bool
@@ -272,6 +312,10 @@ final class Bot
 
     /**
      * Завершить работу бота
+     *
+     * Появилось в API: 1.0
+     *
+     * @return void
      */
     public function Shutdown() : void
     {
@@ -284,6 +328,10 @@ final class Bot
 
     /**
      * Перезагрузить бота
+     *
+     * Появилось в API: 1.0
+     *
+     * @return void
      */
     public function Reboot() : void
     {
@@ -297,6 +345,8 @@ final class Bot
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool Поддерживается ли перезапуск бота
      */
     public function IsRestartSupported() : bool

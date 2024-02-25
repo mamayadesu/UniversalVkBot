@@ -110,6 +110,8 @@ final class Message
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Дата отправки сообщения в формате Unixtime
      */
     public function GetDate() : int
@@ -118,6 +120,8 @@ final class Message
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя, отправивший сообщение
      */
     public function GetFrom() : User
@@ -126,6 +130,8 @@ final class Message
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Group Группа, в личные сообщения которой написали
      */
     public function GetGroup() : Group
@@ -134,6 +140,8 @@ final class Message
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Geolocation|null Геолокация (если она отправлена)
      */
     public function GetGeolocation() : ?Geolocation
@@ -142,6 +150,8 @@ final class Message
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Текст сообщения
      */
     public function GetText() : string
@@ -150,6 +160,8 @@ final class Message
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Идентификатор получателя сообщения
      */
     public function GetPeerId() : int
@@ -158,6 +170,8 @@ final class Message
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return ?Conversation Идентификатор сообщения в диалоге
      */
     public function GetConversation() : ?Conversation
@@ -166,6 +180,8 @@ final class Message
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Идентификатор сообщения (на данный момент не работает с текущей версией VK API)
      */
     public function GetMessageId() : int
@@ -174,6 +190,8 @@ final class Message
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Attachment[] Список вложений
      */
     public function GetAttachments() : array
@@ -183,6 +201,8 @@ final class Message
 
     /**
      * Является ли сообщение личным
+     *
+     * Появилось в API: 1.0
      *
      * @return bool
      */
@@ -194,13 +214,15 @@ final class Message
     /**
      * Удалить сообщение из беседы
      *
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - сообщение удалено. FALSE - произошла ошибка (см. консоль)
      */
     public function Delete(?Group $group_deleter = null) : bool
     {
         if ($this->IsPrivate())
         {
-            throw new Exception("Unable to delete private message");
+            throw new Exception("Private messages cannot be deleted");
         }
         if ($group_deleter === null)
         {
@@ -209,7 +231,7 @@ final class Message
         $api = self::GetApi();
         $deleteParams = array(
             "delete_for_all" => true,
-            "conversation_message_ids" => $this->GetConversation()->GetId(),
+            "conversation_message_ids" => $this->MessageId,
             "peer_id" => $this->GetPeerId()
         );
 
@@ -227,6 +249,8 @@ final class Message
 
     /**
      * Загружает изображение для отправки пользователю в личные сообщения
+     *
+     * Появилось в API: 1.0
      *
      * @param ImageContext[] $contexts
      * @param User $user
@@ -323,6 +347,8 @@ final class Message
     /**
      * Ответить пользователю на сообщение. Если это сообщение в беседе, оно также будет отправлено в беседу
      *
+     * Появилось в API: 1.0
+     *
      * @param string $message Текст сообщения
      * @param array $attachments Список вложений. Вложения указывать в простом формате: <mediatype><owner>_<attachment>_<accesskey>. Например: photo1234_5678
      * @param BotKeyboard|null $keyboard Клавиатура бота (не нужна, если это сообщение в беседе)
@@ -357,9 +383,12 @@ final class Message
     /**
      * Отправить сообщение в беседу
      *
+     * Появилось в API: 1.0
+     *
      * @param string $message Текст сообщения
      * @param Conversation $conversation Объект беседы
      * @param array<string> $attachments Список вложений. Массив должен содержать строки в формате <mediatype><owner>_<attachmentid>_<accesskey>
+     * @param Group|null $by_group От лица какого сообщества отправить сообщение
      * @param Geolocation|null $geolocation Геолокация
      * @throws VKApiException
      * @throws VKApiMessagesCantFwdException
@@ -417,6 +446,8 @@ final class Message
     /**
      * Отправить личное сообщение пользователю от имени сообщества
      *
+     * Появилось в API: 1.0
+     *
      * @param string $message Текст сообщения
      * @param User $user Объект пользователя
      * @param array<string> $attachments Список вложений. Массив должен содержать строки в формате <mediatype><owner>_<attachmentid>_<accesskey>
@@ -443,6 +474,8 @@ final class Message
 
     /**
      * Рассылка сообщения пользователям
+     *
+     * Появилось в API: 1.0
      *
      * @param string $message Текст сообщения
      * @param array<User> $users Список объектов User

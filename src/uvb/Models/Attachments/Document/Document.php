@@ -96,6 +96,8 @@ class Document extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Название файла вместе с его расширением
      */
     public function GetTitle() : string
@@ -104,6 +106,8 @@ class Document extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Прямая ссылка на скачивание файла
      */
     public function GetUrl() : string
@@ -112,6 +116,8 @@ class Document extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Расширение файла
      */
     public function GetFileExtension() : string
@@ -120,6 +126,8 @@ class Document extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Размер файла в байтах
      */
     public function GetFileSize() : int
@@ -128,6 +136,8 @@ class Document extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Video|null Если это анимированное GIF-изображение, можно также получить MP4-формат
      */
     public function GetVideo() : ?Video
@@ -136,6 +146,8 @@ class Document extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Preview|null Превью документа, если таковое имеется
      */
     public function GetPreview() : ?Preview

@@ -50,6 +50,8 @@ final class Command
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Название команды
      */
     public function GetName() : string
@@ -58,6 +60,8 @@ final class Command
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return array<string> Параметры, переданные в команду
      */
     public function GetArguments() : array
@@ -66,6 +70,8 @@ final class Command
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя, который ввёл команду
      */
     public function GetUser() : User
@@ -76,6 +82,8 @@ final class Command
     /**
      * Получить объект беседы, в которую команда была введена
      *
+     * Появилось в API: 1.0
+     *
      * @return Conversation|null Объект беседы. Всегда будет null, если сообщение было введено в личные сообщения бота либо в консоль
      */
     public function GetConversation() : ?Conversation
@@ -84,6 +92,8 @@ final class Command
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return ?Message Исходное сообщение пользователя
      */
     public function GetMessage() : ?Message

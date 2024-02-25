@@ -34,6 +34,9 @@ class Config
 
     /**
      * Config constructor. Если файл не существует, создаёт его и заполняет данными по умолчанию
+     *
+     * Появилось в API: 1.0
+     *
      * @param string $path Путь к файлу конфигурации
      * @param array $defaultData Содержимое конфига по умолчанию. Если файл не существует, создаёт его и заполняет указанными данными
      * @param bool $autoSave Авто-сохранение
@@ -50,8 +53,8 @@ class Config
         else
         {
             $dataPreLoad1 = file_get_contents($path);
-            $dataPreLoad = json_decode($dataPreLoad1, true);
-            if ($dataPreLoad == null)
+            $dataPreLoad = @json_decode($dataPreLoad1, true);
+            if ($dataPreLoad === null)
             {
                 Bot::GetInstance()->GetLogger()->Error("An error occurred while loading config \"" . $path . "\". Loading default config data...");
                 $this->data = $defaultData;
@@ -66,6 +69,8 @@ class Config
 
     /**
      * Получить значение параметра конфига по его ключу
+     *
+     * Появилось в API: 1.0
      *
      * @param string $key Ключ
      * @param null $defaultValue Значение по умолчанию. Будет возвращено, если указанного ключа в конфиге нет
@@ -89,6 +94,8 @@ class Config
     /**
      * Устанавливает значение параметра конфига по его ключу
      *
+     * Появилось в API: 1.0
+     *
      * @param string $key Ключ
      * @param mixed $value Значение
      */
@@ -106,7 +113,32 @@ class Config
     }
 
     /**
-     * Сохраняет файл конфигурации. Не требуется, если ключено авто-сохранение
+     * Удаляет элемент из конфига
+     *
+     * Появилось в API: 1.0
+     *
+     * @param string $key
+     * @return void
+     */
+    public function Unset(string $key) : void
+    {
+        if ($this->closed)
+        {
+            return;
+        }
+        unset($this->data[$key]);
+        if ($this->autoSave)
+        {
+            $this->Save();
+        }
+    }
+
+    /**
+     * Сохраняет файл конфигурации. Не требуется, если включено авто-сохранение
+     *
+     * Появилось в API: 1.0
+     *
+     * @return void
      */
     public function Save() : void
     {
@@ -121,6 +153,8 @@ class Config
     /**
      * Возвращает весь файл конфигурации в виде массива
      *
+     * Появилось в API: 1.0
+     *
      * @return array|null Данные файла конфигурации в виде массива. Будет возвращено NULL, если конфиг был закрыт
      */
     public function GetAll() : ?array
@@ -134,6 +168,10 @@ class Config
 
     /**
      * Закрывает файл конфигурации
+     *
+     * Появилось в API: 1.0
+     *
+     * @return void
      */
     public function Close() : void
     {
@@ -150,6 +188,8 @@ class Config
     /**
      * Проверяет, был ли закрыт файл конфигурации
      *
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - конфиг закрыт. FALSE - конфиг открыт
      */
     public function IsClosed() : bool
@@ -157,6 +197,9 @@ class Config
         return $this->closed;
     }
 
+    /**
+     * @ignore
+     */
     public function __destruct()
     {
         if (!$this->closed)

@@ -164,6 +164,8 @@ final class Comment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Идентификатор комментария
      */
     public function GetId() : int
@@ -172,7 +174,10 @@ final class Comment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Дата добавления комментария в формате unixtime
+     * @throws Exception
      */
     public function GetDate() : int
     {
@@ -181,7 +186,10 @@ final class Comment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Entity|null Автор комментария (пользователь или сообщество)
+     * @throws Exception
      */
     public function GetFrom() : ?Entity
     {
@@ -190,7 +198,10 @@ final class Comment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Текст комментария
+     * @throws Exception
      */
     public function GetText() : string
     {
@@ -199,7 +210,10 @@ final class Comment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Entity|null Автор комментария, на который был дан ответ (текущий комментарий), если данный комментарий является ответом
+     * @throws Exception
      */
     public function GetReplyTo() : ?Entity
     {
@@ -209,7 +223,10 @@ final class Comment
 
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Comment|null Комментарий, на который был дан ответ, если данный комментарий является ответом
+     * @throws Exception
      */
     public function GetReplyToComment() : ?Comment
     {
@@ -218,7 +235,10 @@ final class Comment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Attachment[] Вложения
+     * @throws Exception
      */
     public function GetAttachments() : array
     {
@@ -236,6 +256,8 @@ final class Comment
 
     /**
      * Получить объект записи, к которому относится комментарий.
+     *
+     * Появилось в API: 1.0
      *
      * @return Post|null
      */
@@ -319,6 +341,8 @@ final class Comment
 
     /**
      * Удалить комментарий
+     *
+     * Появилось в API: 1.0
      *
      * @return void
      * @throws Exception Не поддерживается для стен пользователей

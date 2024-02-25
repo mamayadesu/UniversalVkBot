@@ -37,6 +37,8 @@ class UserLeftGroupEvent extends Event
     /**
      * Получить пользователя
      *
+     * Появилось в API: 1.0
+     *
      * @return User Возвращает пользователя, покинувший группу
      */
     public function GetUser() : User
@@ -47,6 +49,8 @@ class UserLeftGroupEvent extends Event
     /**
      * Вышел ли пользователь из сообщества самостоятельно
      *
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE, если пользователь покинул сообщество самостоятельно. FALSE - во всех остальных случаях
      */
     public function LeftBySelf() : bool
@@ -56,6 +60,8 @@ class UserLeftGroupEvent extends Event
 
     /**
      * Возвращает объект группы, из которой вышли или исключили
+     *
+     * Появилось в API: 1.0
      *
      * @return Group
      */

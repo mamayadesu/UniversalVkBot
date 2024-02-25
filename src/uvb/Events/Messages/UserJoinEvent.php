@@ -38,6 +38,8 @@ class UserJoinEvent extends Event
     /**
      * Получить пользователя, который присоединился
      *
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя, который самостоятельно присоединился к беседе
      */
     public function GetJoined() : User
@@ -47,6 +49,8 @@ class UserJoinEvent extends Event
 
     /**
      * Получить идентификатор беседы
+     *
+     * Появилось в API: 1.0
      *
      * @return Conversation Идентификатор беседы
      */

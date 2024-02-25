@@ -26,6 +26,8 @@ class Size extends PhotoSize
     /**
      * Получить ссылку на файл изображения
      *
+     * Появилось в API: 1.0
+     *
      * @return string URL файла изображения
      */
     public function GetUrl() : string

@@ -47,6 +47,8 @@ final class Video
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Ссылка на скачивание
      */
     public function GetLink() : string
@@ -55,6 +57,8 @@ final class Video
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Ширина видео
      */
     public function GetWidth() : int
@@ -63,6 +67,8 @@ final class Video
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Высота видео
      */
     public function GetHeight() : int
@@ -71,6 +77,8 @@ final class Video
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Размер файла
      */
     public function GetFileSize() : int

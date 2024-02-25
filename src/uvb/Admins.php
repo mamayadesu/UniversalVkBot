@@ -86,6 +86,8 @@ final class Admins
     /**
      * Возвращает список идентификаторов администраторов
      *
+     * Появилось в API: 1.0
+     *
      * @return int[]
      */
     final public static function GetAdmins() : array

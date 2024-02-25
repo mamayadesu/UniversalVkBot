@@ -17,6 +17,7 @@ use uvb\Events\Messages\NewConversationMessageEvent;
 use uvb\Events\Messages\NewPrivateMessageEvent;
 use uvb\Plugin\Plugin;
 use uvb\System\CrashHandler;
+use uvb\System\SystemConfig;
 use \VK\Client\VKApiClient;
 use \VK\Actions\Messages;
 use \Throwable;
@@ -54,7 +55,10 @@ class NewMessage
                 {
                     cmm::c("exception.newmessage", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -80,7 +84,10 @@ class NewMessage
                 {
                     cmm::c("exception.newconversationmessage", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -106,7 +113,10 @@ class NewMessage
                 {
                     cmm::c("exception.useradd", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -131,7 +141,10 @@ class NewMessage
                 catch (Throwable $e)
                 {
                     cmm::c("exception.userjoin", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -157,7 +170,10 @@ class NewMessage
                 {
                     cmm::c("exception.userleft", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -183,7 +199,10 @@ class NewMessage
                 {
                     cmm::c("exception.userkick", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -209,7 +228,10 @@ class NewMessage
                 {
                     cmm::c("exception.botjoin", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -235,7 +257,10 @@ class NewMessage
                 {
                     cmm::c("exception.botleft", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -261,7 +286,10 @@ class NewMessage
                 {
                     cmm::c("exception.commandpreprocess", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }

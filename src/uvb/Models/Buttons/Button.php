@@ -36,6 +36,8 @@ class Button
     /**
      * Получить текст кнопки
      *
+     * Появилось в API: 1.0
+     *
      * @return string Текст кнопки
      */
     public function GetLabel() : string
@@ -46,6 +48,8 @@ class Button
     /**
      * Получить полезную нагрузку кнопки
      *
+     * Появилось в API: 1.0
+     *
      * @return string Полезная нагрузка кнопки
      */
     public function GetPayload() : string
@@ -55,6 +59,8 @@ class Button
 
     /**
      * Получить тип кнопки
+     *
+     * Появилось в API: 1.0
      *
      * @return string Тип кнопки
      */
@@ -71,6 +77,8 @@ class Button
     /**
      * Конвертировать данные кнопки в JSON
      *
+     * Появилось в API: 1.0
+     *
      * @return string Данные кнопки в виде JSON
      */
     public function ConvertToJson() : string
@@ -81,6 +89,8 @@ class Button
 
     /**
      * Получить данные кнопки в виде массива
+     *
+     * Появилось в API: 1.0
      *
      * @return array Данные кнопки
      */

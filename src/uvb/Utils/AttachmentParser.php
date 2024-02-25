@@ -21,6 +21,14 @@ class AttachmentParser
     // Потому что вложений с разными айдишниками много и кэшировать их - лишняя трата памяти
     private static array $CachedAttachments = array();*/
 
+    /**
+     * Парсит вложение, присланные в JSON от VK.
+     *
+     * Появилось в API: 1.0
+     *
+     * @param array $sourceData Исходные данные
+     * @return Attachment|null Объект вложения
+     */
     public static function Parse(array $sourceData) : ?Attachment
     {
         $attachment = null;
@@ -115,6 +123,9 @@ class AttachmentParser
         return $attachment;
     }
 
+    /**
+     * @ignore
+     */
     private static function PrintErr(Exception $e) : void
     {
         Bot::GetInstance()->GetLogger()->Critical($e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());

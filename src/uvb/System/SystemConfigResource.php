@@ -3,6 +3,9 @@ declare(ticks = 1);
 
 namespace uvb\System;
 
+/**
+ * @ignore
+ */
 final class SystemConfigResource
 {
     private static array $config = array();

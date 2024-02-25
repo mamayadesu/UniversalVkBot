@@ -188,6 +188,8 @@ class Audio extends Attachment
     /**
      * Получить имя исполнителя
      *
+     * Появилось в API: 1.0
+     *
      * @return string Имя исполнителя
      */
     public function GetArtist() : string
@@ -197,6 +199,8 @@ class Audio extends Attachment
 
     /**
      * Получить название трека
+     *
+     * Появилось в API: 1.0
      *
      * @return string Название аудиозаписи
      */
@@ -208,6 +212,8 @@ class Audio extends Attachment
     /**
      * Получить трек-код
      *
+     * Появилось в API: 1.0
+     *
      * @return string Трек-код
      */
     public function GetTrackCode() : string
@@ -217,6 +223,8 @@ class Audio extends Attachment
 
     /**
      * Получить URL на mp3-файл
+     *
+     * Появилось в API: 1.0
      *
      * @return string Полная ссылка на MP3-файл
      */
@@ -228,6 +236,8 @@ class Audio extends Attachment
     /**
      * Получить пометку к треку (Remix, Original Mix и т.п.)
      *
+     * Появилось в API: 1.0
+     *
      * @return string Пометка к треку
      */
     public function GetSubtitle() : string
@@ -237,6 +247,8 @@ class Audio extends Attachment
 
     /**
      * Получить продолжительность трека
+     *
+     * Появилось в API: 1.0
      *
      * @return int Продолжительность трека в секундах
      */
@@ -248,6 +260,8 @@ class Audio extends Attachment
     /**
      * Получить ID жанра песни
      *
+     * Появилось в API: 1.0
+     *
      * @return int Номер жанра песни
      */
     public function GetGenreId() : int
@@ -255,26 +269,51 @@ class Audio extends Attachment
         return $this->genreId;
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @return bool
+     */
     public function IsExplicit() : bool
     {
         return $this->isExplicit;
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @return bool
+     */
     public function IsFocusTrack() : bool
     {
         return $this->isFocusTrack;
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @return bool
+     */
     public function ShortVideosAllowed() : bool
     {
         return $this->shortVideosAllowed;
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @return bool
+     */
     public function StoriesAllowed() : bool
     {
         return $this->storiesAllowed;
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @return bool
+     */
     public function StoriesCoverAllowed() : bool
     {
         return $this->storiesCoverAllowed;
@@ -282,6 +321,8 @@ class Audio extends Attachment
 
     /**
      * Скрыт ли трек из поиска
+     *
+     * Появилось в API: 1.0
      *
      * @return bool Скрыт ли трек из поиска
      */
@@ -291,6 +332,8 @@ class Audio extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return AudioArtist[]
      */
     public function GetMainArtists() : array
@@ -299,6 +342,8 @@ class Audio extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return AudioArtist[]
      */
     public function GetFeaturedArtists() : array

@@ -39,6 +39,8 @@ class UserAddEvent extends Event
     /**
      * Получить пользователя, который добавил нового пользователя
      *
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя, который добавил человека в беседу
      */
     public function GetInvited() : User
@@ -49,6 +51,8 @@ class UserAddEvent extends Event
     /**
      * Получить пользователя, который был добавлен
      *
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя, который был добавлен в беседу
      */
     public function GetJoined() : User
@@ -58,6 +62,8 @@ class UserAddEvent extends Event
 
     /**
      * Получить объект беседы
+     *
+     * Появилось в API: 1.0
      *
      * @return Conversation Объект беседы
      */

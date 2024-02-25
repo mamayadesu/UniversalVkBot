@@ -39,6 +39,8 @@ class VKApps extends Button
     /**
      * Получить идентификатор приложения
      *
+     * Появилось в API: 1.0
+     *
      * @return int Идентификатор приложения
      */
     public function GetAppId() : int
@@ -48,6 +50,8 @@ class VKApps extends Button
 
     /**
      * Получить идентификатор владельца приложения
+     *
+     * Появилось в API: 1.0
      *
      * @return int Идентификатор владельца приложения
      */

@@ -28,6 +28,8 @@ abstract class Event
     /**
      * Возможно ли отменить событие
      *
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - событие можно отменить, вызвав метод SetCancelled(). FALSE - событие отменить нельзя
      */
     public function IsCancellable() : bool
@@ -37,6 +39,8 @@ abstract class Event
 
     /**
      * Отменить событие. Событие нельзя отменить, если в параметрах события задано, что оно неотменяемое
+     *
+     * Появилось в API: 1.0
      */
     public function SetCancelled() : void
     {
@@ -49,6 +53,8 @@ abstract class Event
     /**
      * Отменено ли событие
      *
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - событие отменено. FALSE - событие не было отменено
      */
     public function IsCancelled() : bool
@@ -58,6 +64,8 @@ abstract class Event
 
     /**
      * Получить объект группы, к которой относится событие
+     *
+     * Появилось в API: 1.0
      *
      * @return Group|null
      */

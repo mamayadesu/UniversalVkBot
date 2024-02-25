@@ -45,6 +45,8 @@ class StickerImage
     /**
      * Получить ссылку на файл изображения
      *
+     * Появилось в API: 1.0
+     *
      * @return string URL файла изображения
      */
     public function GetUrl() : string
@@ -53,6 +55,8 @@ class StickerImage
     }
     /**
      * Получить длину изображения
+     *
+     * Появилось в API: 1.0
      *
      * @return int Длина изображения
      */
@@ -63,6 +67,8 @@ class StickerImage
 
     /**
      * Получить высоту изображения
+     *
+     * Появилось в API: 1.0
      *
      * @return int Высота изображения
      */

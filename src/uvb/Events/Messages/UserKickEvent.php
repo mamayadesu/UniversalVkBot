@@ -39,6 +39,8 @@ class UserKickEvent extends Event
     /**
      * Получить пользователя, который исключил пользователя из беседы
      *
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя, который исключил другого человека из беседы
      */
     public function GetKickedBy() : User
@@ -49,6 +51,8 @@ class UserKickEvent extends Event
     /**
      * Получить пользователя, который был исключён
      *
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя, который был исключён из беседы
      */
     public function GetKicked() : User
@@ -58,6 +62,8 @@ class UserKickEvent extends Event
 
     /**
      * Получить идентификатор беседы
+     *
+     * Появилось в API: 1.0
      *
      * @return Conversation Идентификатор беседы
      */

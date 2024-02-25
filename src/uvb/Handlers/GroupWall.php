@@ -10,6 +10,7 @@ use uvb\Events\Wall\NewPostEvent;
 use uvb\Main;
 use uvb\Plugin\Plugin;
 use uvb\System\CrashHandler;
+use uvb\System\SystemConfig;
 
 /**
  * @ignore
@@ -43,7 +44,10 @@ class GroupWall
                 {
                     cmm::c("exception.newpost", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -69,7 +73,10 @@ class GroupWall
                 {
                     cmm::c("exception.newcomment", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }

@@ -45,6 +45,8 @@ class AudioArtist
     /**
      * Получить имя исполнителя
      *
+     * Появилось в API: 1.0
+     *
      * @return string Имя исполнителя
      */
     public function GetName() : string
@@ -55,6 +57,8 @@ class AudioArtist
     /**
      * Получить домен исполнителя (честно говоря, я так и не выяснил что это)
      *
+     * Появилось в API: 1.0
+     *
      * @return string Домен
      */
     public function GetDomain() : string
@@ -64,6 +68,8 @@ class AudioArtist
 
     /**
      * Получить идентификатор исполнителя
+     *
+     * Появилось в API: 1.0
      *
      * @return string Идентификатор исполнителя
      */

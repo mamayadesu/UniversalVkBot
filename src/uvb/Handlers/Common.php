@@ -10,6 +10,7 @@ use uvb\Main;
 use uvb\Plugin\Plugin;
 use \Throwable;
 use uvb\System\CrashHandler;
+use uvb\System\SystemConfig;
 
 /**
  * @ignore
@@ -44,7 +45,10 @@ class Common
                 {
                     cmm::c("exception.common", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -70,7 +74,10 @@ class Common
                 {
                     cmm::c("exception.common", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }

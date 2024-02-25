@@ -12,17 +12,17 @@ use Data\Enum;
 class GroupAccessType extends Enum
 {
     /**
-     * Открытое
+     * Открытое. Появилось в API: 1.0
      */
     const OPEN = 0;
 
     /**
-     * Закрытое
+     * Закрытое. Появилось в API: 1.0
      */
     const CLOSED = 1;
 
     /**
-     * Частное
+     * Частное. Появилось в API: 1.0
      */
     const PRIVATE = 2;
 }

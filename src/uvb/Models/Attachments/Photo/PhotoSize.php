@@ -56,6 +56,8 @@ class PhotoSize
     /**
      * Получить ссылку на файл изображения
      *
+     * Появилось в API: 1.0
+     *
      * @return string URL файла изображения
      */
     public function GetUrl() : string
@@ -65,6 +67,8 @@ class PhotoSize
 
     /**
      * Получить тип фотографии
+     *
+     * Появилось в API: 1.0
      *
      * @return string Тип фотографии
      */
@@ -76,6 +80,8 @@ class PhotoSize
     /**
      * Получить длину изображения
      *
+     * Появилось в API: 1.0
+     *
      * @return int Длина изображения
      */
     public function GetWidth() : int
@@ -85,6 +91,8 @@ class PhotoSize
 
     /**
      * Получить высоту изображения
+     *
+     * Появилось в API: 1.0
      *
      * @return int Высота изображения
      */

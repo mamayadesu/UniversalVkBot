@@ -7,7 +7,7 @@ use Application\Application;
 use Threading\Thread;
 use uvb\Utils\CpuUsage;
 
-// используется только в Linux. В Windows не поддерживается
+// Используется только в Linux. В Windows не поддерживается
 /**
  * @ignore
  */

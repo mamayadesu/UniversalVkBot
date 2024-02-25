@@ -13,6 +13,7 @@ use uvb\Models\Group;
 use uvb\Models\Message;
 use \Throwable;
 use uvb\System\CrashHandler;
+use uvb\System\SystemConfig;
 
 /**
  * @ignore
@@ -59,7 +60,10 @@ class CommandHandler
             {
                 cmm::c("exception.command", [$executor->GetPluginName(), $cmd->GetName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                 CrashHandler::Handle($e, $executor, $cmd);
-                $executor->DisablePlugin();
+                if (SystemConfig::Get("disable_plugin_on_exception"))
+                {
+                    $executor->DisablePlugin();
+                }
             }
         }
     }
@@ -80,7 +84,10 @@ class CommandHandler
         }
         if ($executor == null)
         {
-            Message::SendToConversation(cmm::g("command.convunknown", [$user->GetMention(), $cmd->GetName()]), $conversation, [], $group);
+            if (SystemConfig::Get("show_invalid_command_in_conversations"))
+            {
+                Message::SendToConversation(cmm::g("command.convunknown", [$user->GetMention(), $cmd->GetName()]), $conversation, [], $group);
+            }
         }
         else if (!$cmdi->IsAllowedForUsers() && !$user->IsAdmin())
         {
@@ -96,7 +103,10 @@ class CommandHandler
             {
                 cmm::c("exception.conversationcommand", [$executor->GetPluginName(), $cmd->GetName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                 CrashHandler::Handle($e, $executor, $cmd);
-                $executor->DisablePlugin();
+                if (SystemConfig::Get("disable_plugin_on_exception"))
+                {
+                    $executor->DisablePlugin();
+                }
             }
         }
     }

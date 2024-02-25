@@ -10,7 +10,6 @@ use uvb\Main;
 /**
  * Информация об использовании CPU (только для Linux)
  */
-
 class CpuUsage
 {
     /**
@@ -48,6 +47,8 @@ class CpuUsage
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool Запущена ли данная служба
      */
     public static function IsRunning() : bool
@@ -56,6 +57,8 @@ class CpuUsage
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return float Процент использования CPU. Работает только Linux-системах. Для Windows этот метод всегда возвращает ноль.
      */
     public static function GetValue() : float

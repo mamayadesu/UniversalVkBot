@@ -25,6 +25,8 @@ class NewCommentEvent extends Event
     /**
      * Возвращает объект комментария
      *
+     * Появилось в API: 1.0
+     *
      * @return Comment
      */
     public function GetComment() : Comment
@@ -34,6 +36,8 @@ class NewCommentEvent extends Event
 
     /**
      * Отменяет событие новой записи на стене сообщества (удаляет запись).
+     *
+     * Появилось в API: 1.0
      *
      * @return void
      * @throws Exception

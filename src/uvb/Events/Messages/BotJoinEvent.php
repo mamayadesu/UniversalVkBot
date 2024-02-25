@@ -48,6 +48,8 @@ class BotJoinEvent extends Event
     /**
      * Получить пользователя, который добавил бота в беседу
      *
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя
      */
     public function GetInvited() : User
@@ -58,6 +60,8 @@ class BotJoinEvent extends Event
     /**
      * Получить идентификатор беседы
      *
+     * Появилось в API: 1.0
+     *
      * @return Conversation Идентификатор беседы
      */
     public function GetConversation() : Conversation
@@ -67,6 +71,8 @@ class BotJoinEvent extends Event
 
     /**
      * Получить объект группы, которая была добавлена в беседу
+     *
+     * Появилось в API: 1.0
      *
      * @return Group
      */

@@ -3,6 +3,9 @@ declare(ticks = 1);
 
 namespace uvb;
 
+/**
+ * @ignore
+ */
 final class cmm
 {
     public static ConsoleMessagesManager $consoleMessagesManager;

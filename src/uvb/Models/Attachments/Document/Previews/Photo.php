@@ -35,6 +35,8 @@ final class Photo extends Preview
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return array<Size> Массив размеров изображения
      */
     public function GetSizes() : array

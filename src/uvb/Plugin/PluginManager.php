@@ -84,6 +84,8 @@ class PluginManager
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return array<string, string>
      */
     public function GetQueue() : array
@@ -91,6 +93,13 @@ class PluginManager
         return $this->waitingForPlugins;
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @param string $key
+     * @param string $value
+     * @return void
+     */
     public function AddPluginToQueue(string $key, string $value) : void
     {
         if (!isset($this->waitingForPlugins[$key]))
@@ -99,6 +108,12 @@ class PluginManager
         }
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @param string $key
+     * @return void
+     */
     public function RemovePluginFromQueue(string $key) : void
     {
         if (isset($this->waitingForPlugins[$key]))
@@ -109,6 +124,8 @@ class PluginManager
 
     /**
      * Загружает плагин. В случае ошибки выводит информацию в консоль
+     *
+     * Появилось в API: 1.0
      *
      * @param string $pathToPlugin Путь к PHAR-файлу
      * @param bool $plugins_settings_autosave Сохранять ли плагин в plugins_settings.json по умолчанию
@@ -312,6 +329,8 @@ class PluginManager
     /**
      * Загрузить плагин из любого другого источника
      *
+     * Появилось в API: 1.0
+     *
      * @param string $name Имя плагина
      * @param string $version Версия плагина
      * @param string $api_version API UniversalVkBot, который плагин использует
@@ -419,6 +438,8 @@ class PluginManager
 
     /**
      * Загружает плагины из папки `/plugins`
+     *
+     * Появилось в API: 1.0
      */
     public function LoadPlugins() : void
     {
@@ -434,6 +455,8 @@ class PluginManager
     /**
      * Получить путь к плагинам
      *
+     * Появилось в API: 1.0
+     *
      * @return string Полный путь к папке с плагинами
      */
     public function GetPathToPlugins() : string
@@ -443,6 +466,8 @@ class PluginManager
 
     /**
      * Загружен ли плагин
+     *
+     * Появилось в API: 1.0
      *
      * @param string $name Имя плагина
      * @return bool TRUE - плагин с указанным названием загружен. FALSE - плагина с таким именем нет
@@ -454,6 +479,8 @@ class PluginManager
 
     /**
      * Получить объект главного класса плагина
+     *
+     * Появилось в API: 1.0
      *
      * @param string $name Имя загруженного плагина
      * @return Plugin|null Объект главного класса плагина. Метод вернёт NULL, если плагин с таким названием не был загружен
@@ -470,6 +497,8 @@ class PluginManager
 
     /**
      * Завершить работу плагина
+     *
+     * Появилось в API: 1.0
      *
      * @param string $name Имя загруженного плагина
      * @param bool $printErrors TRUE - будут выведены ошибки (если они есть) в консоль
@@ -546,6 +575,8 @@ class PluginManager
 
     /**
      * Получить массив плагинов.
+     *
+     * Появилось в API: 1.0
      *
      * @return array<string, Plugin> Список объектов главных классов плагинов. Ключ - имя плагина. Значение - главный класс плагина
      */
@@ -636,6 +667,8 @@ class PluginManager
     /**
      * Получить настройки plugins_settings.json
      *
+     * Появилось в API: 1.0
+     *
      * @return array<string, string[]>
      */
     public function GetPluginsSettings() : array
@@ -645,6 +678,8 @@ class PluginManager
 
     /**
      * Сохранить настройки plugins_settings.json
+     *
+     * Появилось в API: 1.0
      *
      * @return void
      */

@@ -57,6 +57,8 @@ class AudioMessage extends Preview
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Длительность аудио-файла
      */
     public function GetDuration() : int
@@ -65,6 +67,8 @@ class AudioMessage extends Preview
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return array<int> Массив целых чисел для визуального отображения звука
      */
     public function GetWaveForm() : array
@@ -73,6 +77,8 @@ class AudioMessage extends Preview
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Ссылка на MP3-файл аудио-сообщения
      */
     public function GetMp3Link() : string
@@ -81,6 +87,8 @@ class AudioMessage extends Preview
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Ссылка на OGG-файл аудио-сообщения
      */
     public function GetOggLink() : string

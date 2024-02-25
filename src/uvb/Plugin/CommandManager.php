@@ -46,6 +46,8 @@ class CommandManager
     /**
      * Зарегистрировать новую команду для личных сообщений
      *
+     * Появилось в API: 1.0
+     *
      * @param CommandInfo $commandInfo Объект, описывающий зарегистрированную команду
      */
     public function RegisterPrivateCommand(CommandInfo $commandInfo) : void
@@ -57,6 +59,8 @@ class CommandManager
 
     /**
      * Удалить зарегистрированную команду для личных сообщений
+     *
+     * Появилось в API: 1.0
      *
      * @param string $commandName Имя команды
      * @param Plugin $owner Плагин, к которому команда принадлежит
@@ -91,6 +95,8 @@ class CommandManager
     /**
      * Получить список зарегистрированных команд для личных сообщений
      *
+     * Появилось в API: 1.0
+     *
      * @return array<CommandInfo> Список объектов CommandInfo, описывающие зарегистрированные команды
      */
     public function GetRegisteredPrivateCommands() : array
@@ -108,6 +114,8 @@ class CommandManager
     /**
      * Зарегистрировать команду для бесед
      *
+     * Появилось в API: 1.0
+     *
      * @param CommandInfo $commandInfo Объект, описывающий зарегистрированную команду
      */
     public function RegisterConversationCommand(CommandInfo $commandInfo) : void
@@ -119,6 +127,8 @@ class CommandManager
 
     /**
      * Удалить зарегистрированную команду для бесед
+     *
+     * Появилось в API: 1.0
      *
      * @param string $commandName Имя команды
      * @param Plugin $owner Плагин, к которому принадлежит команда
@@ -152,6 +162,8 @@ class CommandManager
 
     /**
      * Получить список зарегистрированных команд для бесед
+     *
+     * Появилось в API: 1.0
      *
      * @return array<CommandInfo> Список объектов CommandInfo, описывающие зарегистрированные команды
      */

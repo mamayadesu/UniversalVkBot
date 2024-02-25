@@ -13,6 +13,8 @@ final class APIVersions
     /**
      * Возвращает список поддерживаемых версий UniversalVkBot API
      *
+     * Появилось в API: 1.0
+     *
      * @return array<int, string>
      */
     public static function Get() : array
@@ -22,6 +24,8 @@ final class APIVersions
 
     /**
      * Возвращает последнюю поддерживаемую версию UniversalVkBot API (аналогично константе API_VERSION)
+     *
+     * Появилось в API: 1.0
      *
      * @return string
      */

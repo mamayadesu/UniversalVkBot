@@ -44,6 +44,8 @@ class CommandPreProcessEvent extends Event
     /**
      * Получить команду
      *
+     * Появилось в API: 1.0
+     *
      * @return Command Объект введённой команды
      */
     public function GetCommand() : Command
@@ -54,6 +56,8 @@ class CommandPreProcessEvent extends Event
     /**
      * Отправлена ли команда в личные сообщения или в консоль
      *
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - если команда была отправлена в личные сообщения боту либо в консоль. FALSE - в любую беседу
      */
     public function IsPrivate() : bool
@@ -63,6 +67,8 @@ class CommandPreProcessEvent extends Event
 
     /**
      * Получить идентификатор беседы
+     *
+     * Появилось в API: 1.0
      *
      * @return Conversation|null Идентификатор беседы
      */

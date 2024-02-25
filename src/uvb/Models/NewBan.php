@@ -11,7 +11,7 @@ use uvb\System\SystemConfig;
 class NewBan
 {
     /**
-     * @var int|null Время и дата окончания блокировки. Укажите NULL, если хотите заблокировать пользователя навсегда
+     * @var int|null Время и дата окончания блокировки. Укажите NULL, если хотите заблокировать пользователя навсегда. Появилось в API: 1.0
      */
     public ?int $EndDate = null;
 
@@ -21,25 +21,33 @@ class NewBan
     public int $Reason = BanReason::Other;
 
     /**
-     * @var string Комментарий к блокировке
+     * @var string Комментарий к блокировке. Появилось в API: 1.0
      */
     public string $Comment = "";
 
     /**
-     * @var bool Будет ли пользователь видеть сообщение о блокировке
+     * @var bool Будет ли пользователь видеть сообщение о блокировке. Появилось в API: 1.0
      */
     public bool $CommentVisible = true;
 
     /**
-     * @var Group|null Группа, в которой пользователь будет заблокирован
+     * @var Group|null Группа, в которой пользователь будет заблокирован. Появилось в API: 1.0
      */
     public ?Group $Group = null;
 
     /**
-     * @var Entity|null Группа или пользователь, который будет заблокирован
+     * @var Entity|null Группа или пользователь, который будет заблокирован. Появилось в API: 1.0
      */
     public ?Entity $Entity = null;
 
+    /**
+     * Заблокировать пользователя
+     *
+     * Появилось в API: 1.0
+     *
+     * @return void
+     * @throws Exception
+     */
     public function Execute() : void
     {
         if ($this->Entity === null)

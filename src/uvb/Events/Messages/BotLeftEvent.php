@@ -44,6 +44,8 @@ class BotLeftEvent extends Event
     /**
      * Получить пользователя, который исключил бота из беседы
      *
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя
      */
     public function GetInvited() : User
@@ -54,6 +56,8 @@ class BotLeftEvent extends Event
     /**
      * Получить идентификатор беседы
      *
+     * Появилось в API: 1.0
+     *
      * @return Conversation Идентификатор беседы
      */
     public function GetConversation() : Conversation
@@ -63,6 +67,8 @@ class BotLeftEvent extends Event
 
     /**
      * Получить объект группы
+     *
+     * Появилось в API: 1.0
      *
      * @return Group
      */

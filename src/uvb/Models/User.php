@@ -70,8 +70,6 @@ final class User implements Entity
         $this->Sex = $Sex;
     }
 
-
-
     /**
      * @ignore
      */
@@ -125,6 +123,8 @@ final class User implements Entity
     /**
      * Получить идентификатор пользователя
      *
+     * Появилось в API: 1.0
+     *
      * @return int Идентификатор пользователя во ВКонтакте
      */
     public function GetVkId() : int
@@ -132,12 +132,21 @@ final class User implements Entity
         return $this->VkId;
     }
 
+    /**
+     * Получить имя пользователя
+     *
+     * Появилось в API: 1.0
+     *
+     * @return string
+     */
     public function GetName() : string
     {
         return $this->GetFirstName() . " " . $this->GetLastName();
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return UserSex Пол пользователя.
      */
     public function GetSex() : int
@@ -146,6 +155,8 @@ final class User implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string День рождения пользователя. Возвращает в формате <день.месяц.год>. Если год у пользователя не указан, то <день.месяц>. Если дата рождения не указана - пустая строка.
      */
     public function GetBirthday() : string
@@ -154,6 +165,8 @@ final class User implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Город, указанный у пользователя
      */
     public function GetCity() : string
@@ -162,6 +175,8 @@ final class User implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Страна, указанная у пользователя
      */
     public function GetCountry() : string
@@ -170,6 +185,8 @@ final class User implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Домен пользователя. Может быть "idАЙДИПОЛЬЗОВАТЕЛЯ" либо кастомный домен, если он его задал в настройках
      */
     public function GetDomain() : string
@@ -178,6 +195,8 @@ final class User implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Статус пользователя
      */
     public function GetStatus() : string
@@ -219,6 +238,8 @@ final class User implements Entity
      * Получить имя человека во всех падежах.
      * Замечание: если имя в каком-либо падеже не было загружено, то данный метод не будет отправлять запрос к VK API. Для этого можете использовать метод GetFirstName(UserNameCases $nameCase, bool $autoQuery)
      *
+     * Появилось в API: 1.0
+     *
      * @return array<string> Массив имени человека во всех падежах
      */
     public function GetFirstNameAsArray() : array
@@ -228,6 +249,8 @@ final class User implements Entity
 
     /**
      * Получить имя человека
+     *
+     * Появилось в API: 1.0
      *
      * @param UserNameCases $nameCase Падеж имени, в котором нужно его получить
      * @param bool $autoQuery Отправлять ли запрос к VK API, если имя в указанном падеже не было загружено
@@ -251,6 +274,8 @@ final class User implements Entity
      * Получить фамилию человека во всех падежах.
      * Замечание: если фамилия в каком-либо падеже не было загружено, то данный метод не будет отправлять запрос к VK API. Для этого можете использовать метод GetLastName(UserNameCases $nameCase, bool $autoQuery)
      *
+     * Появилось в API: 1.0
+     *
      * @return array<string> Массив фамилии человека во всех падежах
      */
     public function GetLastNameAsArray() : array
@@ -260,6 +285,8 @@ final class User implements Entity
 
     /**
      * Получить фамилию человека
+     *
+     * Появилось в API: 1.0
      *
      * @param UserNameCases $nameCase Падеж фамилии, в котором нужно её получить
      * @param bool $autoQuery Отправлять ли запрос к VK API, если фамилия в указанном падеже не была загружена
@@ -280,6 +307,8 @@ final class User implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - объектом является живой человек. FALSE - объектом является консоль
      */
     public function IsHuman() : bool
@@ -289,6 +318,8 @@ final class User implements Entity
 
     /**
      * Получить тэг для упоминания человека в беседе
+     *
+     * Появилось в API: 1.0
      *
      * @param string $nameCase Падеж имени
      * @return string Текст упоминания человека
@@ -305,6 +336,8 @@ final class User implements Entity
     /**
      * Получить тэг для упоминания человека в беседе с его фамилией
      *
+     * Появилось в API: 1.0
+     *
      * @param string $nameCase Падеж имени и фамилии
      * @return string Текст упоминания человека
      */
@@ -319,6 +352,8 @@ final class User implements Entity
 
     /**
      * Отправить личное сообщение человеку
+     *
+     * Появилось в API: 1.0
      *
      * @param string $text Текст сообщения
      * @param array<string> $attachments Список вложений. Вложения указывать в простом формате: <mediatype><owner>_<attachment>_<accesskey>. Например: photo1234_5678
@@ -347,6 +382,8 @@ final class User implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool Является ли человек админом. Всегда будет TRUE, если объектом пользователя является консоль
      */
     public function IsAdmin() : bool
@@ -361,6 +398,8 @@ final class User implements Entity
 
     /**
      * Назначить или убрать из списка администраторов аккаунт VK
+     *
+     * Появилось в API: 1.0
      *
      * @param bool $set
      * @return void
@@ -379,6 +418,8 @@ final class User implements Entity
 
     /**
      * Отправить сообщение человеку (эквивалент SendMessage(string $text, array<string> $attachments, BotKeyboard $keyboard)
+     *
+     * Появилось в API: 1.0
      *
      * @param string $text Текст сообщения. Замечание: в тексте сообщения можно использовать теги <user> и <fulluser>. Они будут использоваться как тэги упоминания с имени и тэги упоминания с именем и фамилией соответственно
      */
@@ -400,6 +441,14 @@ final class User implements Entity
         }
     }
 
+    /**
+     * Разблокировать пользователя в сообществе
+     *
+     * Появилось в API: 1.0
+     *
+     * @param Group $group
+     * @return void
+     */
     public function Unban(Group $group) : void
     {
         $groups = Group::GetApi();
@@ -422,6 +471,8 @@ final class User implements Entity
     /**
      * Получить объект пользователя по его идентификатору
      *
+     * Появилось в API: 1.0
+     *
      * @param int $vkId Идентификатор пользователя
      * @return User|null Объект пользователя. NULL в случае, если пользователя с таким идентификатор нет
      */
@@ -436,7 +487,9 @@ final class User implements Entity
     }
 
     /**
-     * Получить объект пользователя "КОНСОЛЬ"
+     * Получить объект "консоли"
+     *
+     * Появилось в API: 1.0
      *
      * @return User Консоль как объект пользователя
      */
@@ -445,6 +498,13 @@ final class User implements Entity
         return Main::GetConsoleAsUser();
     }
 
+    /**
+     * Получить список кодов падежей
+     *
+     * Появилось в API: 1.0
+     *
+     * @return string[]
+     */
     public static function GetNameCases() : array
     {
         return ["nom", "gen", "dat", "acc", "ins", "abl"];
@@ -472,6 +532,8 @@ final class User implements Entity
 
     /**
      * Получить несколько пользователей
+     *
+     * Появилось в API: 1.0
      *
      * @param array<int> $vkIds2 Список идентификаторов пользователей. В массиве могут находиться только целые числа
      * @return array<?User> Список пользователей

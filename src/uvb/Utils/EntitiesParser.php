@@ -2,6 +2,7 @@
 
 namespace uvb\Utils;
 
+use uvb\Models\Entity;
 use uvb\Models\Group;
 use uvb\Models\User;
 use uvb\Models\UserSex;
@@ -9,6 +10,17 @@ use uvb\Services\UserCache;
 
 class EntitiesParser
 {
+
+    /**
+     * Парсит пользователей и сообщества из JSON, полученный от VK API
+     *
+     * Появилось в API: 1.0
+     *
+     * @param array $response Массив исходных данных. Пользователи должны быть в "profiles", группы должны быть в "groups"
+     * @param Entity[] $data Нужно для рекурсивного парсинга. Содержит список пользователей и сообществ, которые уже были спарсены.
+     * @return Entity[] Массив пользователей и сообществ
+     * @throws \Exception
+     */
     public static function Parse(array $response, array $data = []) : array
     {
         $userCache = UserCache::GetInstance();

@@ -10,7 +10,6 @@ use IO\FileDirectory;
 /**
  * @ingore
  */
-
 final class SystemLogger
 {
     private $f = null;

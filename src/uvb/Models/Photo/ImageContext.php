@@ -39,6 +39,8 @@ class ImageContext
     /**
      * Создаёт контекст изображения из бинарника изображения
      *
+     * Появилось в API: 1.0
+     *
      * @param string $binary
      * @param string $mime
      * @return ImageContext
@@ -56,6 +58,8 @@ class ImageContext
 
     /**
      * Создаёт контекст изображения из файла в файловом хранилище
+     *
+     * Появилось в API: 1.0
      *
      * @param string $path
      * @return ImageContext
@@ -93,6 +97,8 @@ class ImageContext
     /**
      * Возвращает MIME файла
      *
+     * Появилось в API: 1.0
+     *
      * @return string
      * @throws Exception
      */
@@ -108,6 +114,8 @@ class ImageContext
 
     /**
      * Возвращает содержимое файла
+     *
+     * Появилось в API: 1.0
      *
      * @return string
      * @throws Exception
@@ -126,6 +134,8 @@ class ImageContext
     /**
      * Уничтожает данные контекста и освобождает память
      *
+     * Появилось в API: 1.0
+     *
      * @return void
      */
     public function Destroy() : void
@@ -136,6 +146,8 @@ class ImageContext
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool Уничтожен ли объект
      */
     public function IsDestroyed() : bool

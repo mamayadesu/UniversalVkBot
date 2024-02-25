@@ -44,6 +44,8 @@ class Logger
     /**
      * Записать в логи на уровне обычных логов
      *
+     * Появилось в API: 1.0
+     *
      * @param string $text Текст для записи
      */
     public function Log(string $text) : void
@@ -79,6 +81,8 @@ class Logger
 
     /**
      * Записать в логи на уровне предупреждения
+     *
+     * Появилось в API: 1.0
      *
      * @param string $text Текст для записи
      */
@@ -116,6 +120,8 @@ class Logger
     /**
      * Записать в логи на уровне ошибки
      *
+     * Появилось в API: 1.0
+     *
      * @param string $text Текст для записи
      */
     public function Error(string $text) : void
@@ -151,6 +157,8 @@ class Logger
 
     /**
      * Записать в логи на уровне критической ошибки
+     *
+     * Появилось в API: 1.0
      *
      * @param string $text Текст для записи
      */

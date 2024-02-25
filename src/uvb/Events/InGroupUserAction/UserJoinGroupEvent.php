@@ -39,7 +39,9 @@ class UserJoinGroupEvent extends Event
 
     /**
      * Получить пользователя, который вступил или отправил заявку на вступление
-     * 
+     *
+     * Появилось в API: 1.0
+     *
      * @return User Пользователб
      */
     public function GetUser() : User
@@ -49,6 +51,8 @@ class UserJoinGroupEvent extends Event
 
     /**
      * Вступил ли пользователь в группу самостоятельно
+     *
+     * Появилось в API: 1.0
      * 
      * @return bool Присоединился ли пользователь самостоятельно
      */
@@ -60,6 +64,8 @@ class UserJoinGroupEvent extends Event
     /**
      * Отправил ли пользователь заявку на вступление в закрытое сообщество
      *
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - если пользователь только что отправил заявку на вступление в сообщество. FALSE - в остальных случаях
      */
     public function IsRequest() : bool
@@ -69,6 +75,8 @@ class UserJoinGroupEvent extends Event
 
     /**
      * Была ли заявка на вступление в закрытое сообщество одобрена
+     *
+     * Появилось в API: 1.0
      * 
      * @return bool TRUE - если заявка пользователя была только одобрена. FALSE - в остальных случаях
      */
@@ -80,6 +88,8 @@ class UserJoinGroupEvent extends Event
     /**
      * Отменить событие
      * Пользователь будет исключён из сообщества либо заявка на вступление будет отклонена
+     *
+     * Появилось в API: 1.0
      */
     public function SetCancelled() : void
     {
@@ -88,11 +98,13 @@ class UserJoinGroupEvent extends Event
             return;
         }
 
-        $this->cancelled = Group::Get(1)->KickMember($this->user);
+        $this->cancelled = $this->group->KickMember($this->user);
     }
 
     /**
      * Возвращает объект группы, в которую вступили/подали заявку/одобрили заявку на вступление
+     *
+     * Появилось в API: 1.0
      *
      * @return Group
      */

@@ -178,6 +178,8 @@ final class Post
     /**
      * Получить кэш записей со стены.
      *
+     * Появилось в API: 1.0
+     *
      * @return Post[]
      */
     public static function GetPostsCache() : array
@@ -186,7 +188,10 @@ final class Post
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Идентификатор записи
+     * @throws Exception
      */
     public function GetId() : int
     {
@@ -195,7 +200,10 @@ final class Post
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Дата публикации в формате Timestamp
+     * @throws Exception
      */
     public function GetDate() : int
     {
@@ -204,7 +212,10 @@ final class Post
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Текст записи
+     * @throws Exception
      */
     public function GetText() : string
     {
@@ -213,7 +224,10 @@ final class Post
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool Является ли рекламой
+     * @throws Exception
      */
     public function IsAdvertisement() : bool
     {
@@ -222,7 +236,10 @@ final class Post
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Entity|null От чьего имени опубликована запись
+     * @throws Exception
      */
     public function GetPublisher() : ?Entity
     {
@@ -231,7 +248,10 @@ final class Post
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Entity|null Владелец стены
+     * @throws Exception
      */
     public function GetWallOwner() : ?Entity
     {
@@ -240,7 +260,10 @@ final class Post
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return User|null Автор поста
+     * @throws Exception
      */
     public function GetCreator() : ?User
     {
@@ -251,7 +274,10 @@ final class Post
     /**
      * Гибрид GetCreator() и GetFrom(). Если GetCreator() возвращает null, данный метод вернёт то же самое, что и GetFrom()
      *
+     * Появилось в API: 1.0
+     *
      * @return User|null Автор поста
+     * @throws Exception
      */
     public function GetAuthor() : ?User
     {
@@ -288,6 +314,8 @@ final class Post
 
     /**
      * Загружает комментарии к посту
+     *
+     * Появилось в API: 1.0
      *
      * @param int $threadItemsCount Максимальное количество дочерних комментариев
      * @param int $offset Сдвиг для загрузки комментариев
@@ -393,7 +421,10 @@ final class Post
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Attachment[] Вложения
+     * @throws Exception
      */
     public function GetAttachments() : array
     {
@@ -403,6 +434,8 @@ final class Post
 
     /**
      * Возвращает true/false в зависимости от того, является ли данный объект актуальным для UniversalVkBot
+     *
+     * Появилось в API: 1.0
      *
      * @return bool
      */
@@ -472,6 +505,8 @@ final class Post
 
     /**
      * Удалить запись
+     *
+     * Появилось в API: 1.0
      *
      * @return bool
      * @throws Exception

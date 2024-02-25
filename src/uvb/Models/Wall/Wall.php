@@ -39,6 +39,8 @@ final class Wall
     /**
      * Получить список записей сообщества.
      *
+     * Появилось в API: 1.0
+     *
      * @param WallFilters $filter
      * @param int $offset Смещение. Начинается с 0
      * @param int $count Количество записей

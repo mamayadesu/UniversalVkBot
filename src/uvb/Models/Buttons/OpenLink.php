@@ -32,6 +32,8 @@ class OpenLink extends Button
     /**
      * Получить URL ссылки
      *
+     * Появилось в API: 1.0
+     *
      * @return string URL
      */
     public function GetLink() : string

@@ -38,6 +38,8 @@ class NewPrivateMessageEvent extends Event
     /**
      * Получить входящее сообщение
      *
+     * Появилось в API: 1.0
+     *
      * @return Message Объект входящего сообщения
      */
     public function GetInboxMessage() : Message
@@ -47,6 +49,8 @@ class NewPrivateMessageEvent extends Event
 
     /**
      * Получить исходный код данных в виде JSON
+     *
+     * Появилось в API: 1.0
      *
      * @return string Исходный код
      */

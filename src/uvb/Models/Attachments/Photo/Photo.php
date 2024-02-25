@@ -94,6 +94,8 @@ class Photo extends Attachment
     /**
      * Получить список размеров фотографии
      *
+     * Появилось в API: 1.0
+     *
      * @return array<PhotoSize> Список объектов PhotoSize, в которых в каждом из них информация о размере фотографии
      */
     public function GetSizes() : array
@@ -104,6 +106,8 @@ class Photo extends Attachment
     /**
      * Получить идентификатор альбома, в котором находится фотография
      *
+     * Появилось в API: 1.0
+     *
      * @return int Идентификатор альбома
      */
     public function GetAlbumId() : int
@@ -112,7 +116,9 @@ class Photo extends Attachment
     }
 
     /**
-     * Имеет ли фотография тэги
+     * Имеет ли фотография теги
+     *
+     * Появилось в API: 1.0
      *
      * @return bool TRUE - у фотографии есть тэги
      */
@@ -123,6 +129,8 @@ class Photo extends Attachment
 
     /**
      * Получить текст к фотографии
+     *
+     * Появилось в API: 1.0
      *
      * @return string Текст фотографии
      */

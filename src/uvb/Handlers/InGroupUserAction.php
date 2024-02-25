@@ -10,6 +10,7 @@ use uvb\Main;
 use uvb\Plugin\Plugin;
 use \Throwable;
 use uvb\System\CrashHandler;
+use uvb\System\SystemConfig;
 
 /**
  * @ignore
@@ -45,7 +46,10 @@ class InGroupUserAction
                 {
                     cmm::c("exception.userjoingroup", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }
@@ -79,7 +83,10 @@ class InGroupUserAction
                 {
                     cmm::c("exception.userleftgroup", [$plugin->GetPluginName(), $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine()]);
                     CrashHandler::Handle($e, $plugin);
-                    $plugin->DisablePlugin();
+                    if (SystemConfig::Get("disable_plugin_on_exception"))
+                    {
+                        $plugin->DisablePlugin();
+                    }
                 }
             }
         }

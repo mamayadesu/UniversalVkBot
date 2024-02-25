@@ -45,6 +45,8 @@ final class Graffiti extends Preview
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Ссылка на скачивание
      */
     public function GetLink() : string
@@ -53,6 +55,8 @@ final class Graffiti extends Preview
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Ширина изображения
      */
     public function GetWidth() : int
@@ -61,6 +65,8 @@ final class Graffiti extends Preview
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Высота изображения
      */
     public function GetHeight() : int

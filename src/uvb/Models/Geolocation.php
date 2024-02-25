@@ -8,82 +8,84 @@ use \Exception;
 final class Geolocation
 {
     /**
-     * @var string|null Тип геометки
+     * @var string|null Тип геометки. Появилось в API: 1.0
      */
     public ?string $Type = null;
 
     /**
-     * @var float|null Широта
+     * @var float|null Широта. Появилось в API: 1.0
      */
     public ?float $Latitude = null;
 
     /**
-     * @var float|null Долгота
+     * @var float|null Долгота. Появилось в API: 1.0
      */
     public ?float $Longitude = null;
 
     /**
-     * @var string|null Название страны
+     * @var string|null Название страны. Появилось в API: 1.0
      */
     public ?string $Country = null;
 
     /**
-     * @var string|null Название города
+     * @var string|null Название города. Появилось в API: 1.0
      */
     public ?string $City = null;
 
     /**
-     * @var string|null Название места (если назначено)
+     * @var string|null Название места (если назначено). Появилось в API: 1.0
      */
     public ?string $Title = null;
 
     /**
-     * @var string|null URL иконки
+     * @var string|null URL иконки. Появилось в API: 1.0
      */
     public ?string $Icon = null;
 
     /**
-     * @var int|null Дата создания (если назначено)
+     * @var int|null Дата создания (если назначено). Появилось в API: 1.0
      */
     public ?int $Created = null;
 
     /**
-     * @var int|null Идентификатор места (если назначено)
+     * @var int|null Идентификатор места (если назначено). Появилось в API: 1.0
      */
     public ?int $PlaceId = null;
 
     /**
-     * @var int|null Тип чекина (если место добавлено как чекин сообщества)
+     * @var int|null Тип чекина (если место добавлено как чекин сообщества). Появилось в API: 1.0
      */
     public ?int $CheckinType = null;
 
     /**
-     * @var Group|null Сообщество, которому принадлежит геолокация (если место добавлено как чекин сообщества)
+     * @var Group|null Сообщество, которому принадлежит геолокация (если место добавлено как чекин сообщества). Появилось в API: 1.0
      */
     public ?Group $Group = null;
 
     /**
-     * @var string|null URL миниатюры главной фотографии сообщества (если место добавлено как чекин сообщества)
+     * @var string|null URL миниатюры главной фотографии сообщества (если место добавлено как чекин сообщества). Появилось в API: 1.0
      */
     public ?string $GroupPhoto = null;
 
     /**
-     * @var int|null Количество чекинов (если место добавлено как чекин сообщества)
+     * @var int|null Количество чекинов (если место добавлено как чекин сообщества). Появилось в API: 1.0
      */
     public ?int $Checkins = null;
 
     /**
-     * @var int|null Дата и время последнего обновления чекина в формате Unixtime (если место добавлено как чекин сообщества)
+     * @var int|null Дата и время последнего обновления чекина в формате Unixtime (если место добавлено как чекин сообщества). Появилось в API: 1.0
      */
     public ?int $Updated = null;
 
     /**
-     * @var int|null Адрес чекина (если место добавлено как чекин сообщества)
+     * @var int|null Адрес чекина (если место добавлено как чекин сообщества). Появилось в API: 1.0
      */
     public ?int $Address = null;
 
     /**
      * Конвертирует массив-объект VK API геолокации в объект
+     *
+     * Появилось в API: 1.0
      *
      * @param array<string, mixed> $sourceData Исходные данные
      * @return Geolocation Объект геолокации
@@ -172,6 +174,8 @@ final class Geolocation
     /**
      * Конвертирует объект в массив-объект геометки VK API
      *
+     * Появилось в API: 1.0
+     *
      * @return array<string, mixed>
      * @throws Exception Выбрасывает исключение, если геолокация не содержит координаты или тип геометки
      */
@@ -256,6 +260,8 @@ final class Geolocation
 
     /**
      * Рассчитывает дистанцию между двумя геолокациями
+     *
+     * Появилось в API: 1.0
      *
      * @param Geolocation $anotherGeolocation геометка, с которой нужно рассчитать дистанцию
      * @return float Расстояние между двумя геометками в метрах

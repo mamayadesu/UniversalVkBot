@@ -12,8 +12,8 @@ use \Exception;
 
 /**
  * Сервис контроля оперативной памяти
+ * @ignore
  */
-
 class RamController
 {
     /**
@@ -75,6 +75,8 @@ class RamController
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Процент использования оперативной памяти
      */
     public function GetUsagePercent() : int
@@ -91,6 +93,8 @@ class RamController
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Использование оперативной памяти в байтах
      */
     public function GetUsage() : int
@@ -99,6 +103,8 @@ class RamController
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Оперативная память машины
      */
     public function GetTotalMemory() : int
@@ -107,6 +113,8 @@ class RamController
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Выделенная оперативная память в байтах
      */
     public function GetAllocatedMemory() : int
@@ -117,6 +125,8 @@ class RamController
     /**
      * Устанавливает выделенную оперативную память в байтах. Укажите "-1", если хотите задать неограниченное количество оперативной памяти.
      * ВНИМАНИЕ! Будьте осторожны с использованием этого метода. Если вы установите лимит использования памяти меньше, чем она используется в данный момент, бот сразу завершит работу
+     *
+     * Появилось в API: 1.0
      *
      * @param int $memory
      * @return void
@@ -168,6 +178,8 @@ class RamController
 
     /**
      * Переводит такие числа, как 256K, 1G, 1024M в байты
+     *
+     * Появилось в API: 1.0
      *
      * @param string $memory
      * @return int

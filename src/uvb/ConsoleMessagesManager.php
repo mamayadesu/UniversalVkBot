@@ -5,6 +5,9 @@ namespace uvb;
 
 use Application\Application;
 
+/**
+ * @ignore
+ */
 final class ConsoleMessagesManager
 {
     private array $langs;

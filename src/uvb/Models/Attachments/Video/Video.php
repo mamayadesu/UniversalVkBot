@@ -208,6 +208,8 @@ class Video extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - видео можно изменить
      */
     public function CanEdit() : bool
@@ -216,6 +218,8 @@ class Video extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - видео можно добавить в другой альбом
      */
     public function CanAdd() : bool
@@ -224,6 +228,8 @@ class Video extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool TRUE - ...???
      */
     public function CanAttachLink() : bool
@@ -232,6 +238,8 @@ class Video extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool !!!???
      */
     public function IsFavourite() : bool
@@ -241,6 +249,8 @@ class Video extends Attachment
 
     /**
      * Получить описание видео
+     *
+     * Появилось в API: 1.0
      *
      * @return string Описание видео
      */
@@ -252,6 +262,8 @@ class Video extends Attachment
     /**
      * Получить название видео
      *
+     * Появилось в API: 1.0
+     *
      * @return string Название видео
      */
     public function GetTitle() : string
@@ -261,6 +273,8 @@ class Video extends Attachment
 
     /**
      * Получить трек-код видео
+     *
+     * Появилось в API: 1.0
      *
      * @return string Трек-код видео
      */
@@ -272,6 +286,8 @@ class Video extends Attachment
     /**
      * Получить продолжительность видео
      *
+     * Появилось в API: 1.0
+     *
      * @return int продолжительность видео в секундах
      */
     public function GetDuration() : int
@@ -281,6 +297,8 @@ class Video extends Attachment
 
     /**
      * Получить длину разрешения видео
+     *
+     * Появилось в API: 1.0
      *
      * @return int Длина разрешения видео
      */
@@ -292,6 +310,8 @@ class Video extends Attachment
     /**
      * Получить высоту разрешения видео
      *
+     * Появилось в API: 1.0
+     *
      * @return int Высоту разрешения видео
      */
     public function GetHeight() : int
@@ -301,6 +321,9 @@ class Video extends Attachment
 
     /**
      * Получить количество просмотров
+     *
+     * Появилось в API: 1.0
+     *
      * @return int Количество просмотров видео
      */
     public function GetViews() : int
@@ -310,6 +333,9 @@ class Video extends Attachment
 
     /**
      * Получить список кадров в видео
+     *
+     * Появилось в API: 1.0
+     *
      * @return array<VideoImage> Список объектов VideoImages, хранящие информацию о кадрах в видео
      */
     public function GetImage() : array
@@ -319,6 +345,9 @@ class Video extends Attachment
 
     /**
      * Получить список первых кадров в видео
+     *
+     * Появилось в API: 1.0
+     *
      * @return array<VideoImage> Список объектов VideoImage, хранящие информацию о первых кадрах в видео
      */
     public function GetFirstFrame() : array
@@ -330,6 +359,8 @@ class Video extends Attachment
      * Получить ссылки на исходные файлы видео
      *
      * ВНИМАНИЕ! На данный момент этот метод НЕ РАБОТАЕТ. Это связано с VK API, в котором, на данный момент, боты не могут использовать метод video.get. Неизвестно, когда разработчики VK API добавят этот метод для бота и добавят ли вообще.
+     *
+     * Появилось в API: 1.0
      *
      * @return array Список URL на исходные файлы видео
      * @throws Exception

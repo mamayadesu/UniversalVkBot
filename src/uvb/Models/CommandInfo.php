@@ -41,6 +41,8 @@ final class CommandInfo
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Имя команды
      */
     public function GetCommandName() : string
@@ -49,6 +51,8 @@ final class CommandInfo
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Описание команды
      */
     public function GetDescription() : string
@@ -57,6 +61,8 @@ final class CommandInfo
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return bool Разрешена ли команда обычным пользователям
      */
     public function IsAllowedForUsers() : bool
@@ -66,6 +72,8 @@ final class CommandInfo
 
     /**
      * Получить объект плагина, к которому команда принадлежит
+     *
+     * Появилось в API: 1.0
      *
      * @return Plugin|null Объект плагина, к которому принадлежит команда. Если плагин был выключен, то значение будет NULL
      */

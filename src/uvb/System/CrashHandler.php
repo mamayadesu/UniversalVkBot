@@ -12,6 +12,16 @@ use uvb\Plugin\Plugin;
 
 class CrashHandler
 {
+    /**
+     * Сохраняет краш-дамп из любого исключения, наследующий интерфейс Throwable
+     *
+     * Появилось в API: 1.0
+     *
+     * @param Throwable $e Исключение
+     * @param Plugin|null $plugin Объект плагина. Если это ошибка системы, должно быть null
+     * @param Command|null $command Если это команда, здесь должен быть объект команды
+     * @return string Название сохранённого файла
+     */
     public static function Handle(Throwable $e, ?Plugin $plugin = null, ?Command $command = null) : string
     {
         $pluginName = "System";

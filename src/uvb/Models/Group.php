@@ -78,6 +78,8 @@ final class Group implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return Wall Стена сообщества
      */
     public function GetWall() : Wall
@@ -86,6 +88,8 @@ final class Group implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Название сообщества
      */
     public function GetName() : string
@@ -94,6 +98,8 @@ final class Group implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return GroupAccessType Тип сообщества
      */
     public function GetGroupAccessType() : int
@@ -102,6 +108,8 @@ final class Group implements Entity
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return string Адрес сообщества
      */
     public function GetDomain() : string
@@ -111,6 +119,8 @@ final class Group implements Entity
 
     /**
      * Получить экземпляр группы, указанной в конфиге
+     *
+     * Появилось в API: 1.0
      *
      * @param int $vkId Идентификатор сообщества. Положительность числа не имеет значения. Оно автоматически преобразуется
      * @return Group
@@ -127,6 +137,8 @@ final class Group implements Entity
 
     /**
      * Получить список пользователей сообщества
+     *
+     * Появилось в API: 1.0
      *
      * @return array<User> Список пользователей
      */
@@ -188,6 +200,8 @@ final class Group implements Entity
     /**
      * Исключить пользователя из сообщества (указанное в конфигурации бота) или отменить его заявку на вступление в сообщество
      *
+     * Появилось в API: 1.0
+     *
      * @param User $user
      * @return bool TRUE - пользователей исключён из сообщества. FALSE - произошла ошибка (смотреть консоль)
      */
@@ -211,7 +225,36 @@ final class Group implements Entity
     }
 
     /**
+     * Одобрить вступление пользователя в сообщество
+     *
+     * Появилось в API: 1.0
+     *
+     * @param User $user
+     * @return bool
+     */
+    public function ApproveUserRequest(User $user) : bool
+    {
+        $params = array
+        (
+            "group_id" => abs($this->GroupId),
+            "user_id" => $user->GetVkId()
+        );
+        try
+        {
+            (self::GetApi())->approveRequest(SystemConfig::Get("main_admin_access_token"), $params);
+        }
+        catch (Exception $e)
+        {
+            Bot::GetInstance()->GetLogger()->Critical("Error Group::ApproveUserRequest(User->GetVkId() = " . $user->GetVkId() . "): " . $e->getMessage());
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Возвращает access-token данной группы, если он заполнен в config.json. В противном случае будет возвращено NULL
+     *
+     * Появилось в API: 1.0
      *
      * @return string|null
      */
@@ -234,21 +277,41 @@ final class Group implements Entity
         return Bot::GetVkApi()->groups();
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @return int
+     */
     public function GetVkId() : int
     {
         return $this->GroupId;
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @return string
+     */
     public function GetMention() : string
     {
         return "@club" . (-$this->GetVkId()) . " (" . $this->GetName() . ")";
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @return string
+     */
     public function GetFullMention() : string
     {
         return $this->GetMention();
     }
 
+    /**
+     * Появилось в API: 1.0
+     *
+     * @return bool
+     */
     public function IsHuman() : bool
     {
        return false;

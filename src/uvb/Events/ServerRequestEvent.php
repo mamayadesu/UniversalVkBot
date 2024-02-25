@@ -38,6 +38,8 @@ class ServerRequestEvent extends Event
     /**
      * Возвращает объект запроса сервера
      *
+     * Появилось в API: 1.0
+     *
      * @return Request
      */
     public function GetRequest() : Request
@@ -47,6 +49,8 @@ class ServerRequestEvent extends Event
 
     /**
      * Возвращает объект ответа от сервера
+     *
+     * Появилось в API: 1.0
      *
      * @return Response
      */
@@ -58,6 +62,8 @@ class ServerRequestEvent extends Event
     /**
      * Останавливает стандартный обработчик запросов
      *
+     * Появилось в API: 1.0
+     *
      * @return void
      */
     public function PreventDefaultRequestHandler() : void
@@ -68,6 +74,8 @@ class ServerRequestEvent extends Event
     /**
      * Был ли стандартный обработчик запросов остановлен
      *
+     * Появилось в API: 1.0
+     *
      * @return bool
      */
     public function IsDefaultRequestHandlerPrevented() : bool
@@ -77,6 +85,8 @@ class ServerRequestEvent extends Event
 
     /**
      * Является ли секретный ключ бота верным. В противном случае данный метод вернёт FALSE, а метод GetGroup() в таком случае всегда будет возвращать NULL
+     *
+     * Появилось в API: 1.0
      *
      * @return bool
      */

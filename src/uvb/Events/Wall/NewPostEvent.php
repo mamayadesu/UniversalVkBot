@@ -25,6 +25,8 @@ class NewPostEvent extends Event
     /**
      * Возвращает объект записи
      *
+     * Появилось в API: 1.0
+     *
      * @return Post
      */
     public function GetPost() : Post
@@ -34,6 +36,8 @@ class NewPostEvent extends Event
 
     /**
      * Отменяет событие новой записи на стене сообщества (удаляет запись).
+     *
+     * Появилось в API: 1.0
      *
      * @return void
      * @throws Exception

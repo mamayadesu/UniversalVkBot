@@ -6,6 +6,7 @@ namespace uvb;
 use Data\String\BackgroundColors;
 use Data\String\ColoredString;
 use Data\String\ForegroundColors;
+use IO\Console\Exceptions\ReadInterruptedException;
 use \Exception;
 use HttpServer\Exceptions\ServerStartException;
 use HttpServer\ServerEvents;
@@ -55,6 +56,7 @@ use uvb\Services\RamController;
 use uvb\Services\ResourcesWatcher;
 use uvb\Services\UserCache;
 use uvb\System\CrashHandler;
+use uvb\System\ServerQueueTask;
 use uvb\System\SystemConfigResource;
 use uvb\System\Update\Updater;
 use uvb\Threads\CpuChecker;
@@ -72,7 +74,6 @@ use uvb\System\SystemConfig;
 /**
  * @ignore
  */
-
 final class Main
 {
     private static bool $mainInitialized = false;
@@ -82,10 +83,10 @@ final class Main
     private int $timestart = 0;
     public SuperGlobalArray $sga;
 
-    /**
-     * @var array<Threaded>
-     * @ignore
-     */
+    /** @var ?ServerQueueTask[] */
+    private array $serverQueue = [];
+
+    /** @var Threaded[] */
     private array $threads = [];
     public array $config;
     private int $cmdPid = -1;
@@ -206,13 +207,20 @@ final class Main
          */
         cmm::l("main.startinghttpserver"); 
         $this->server = new Server(SystemConfig::Get("server_addr"), SystemConfig::Get("server_port")); 
-        $this->server->On(ServerEvents::Start, function(Server $server) { $this->Server_Start($server);});
-        $this->server->On(ServerEvents::Shutdown, function(Server $server) { $this->Server_Stop($server);});
-        $this->server->On(ServerEvents::Request, function(Request $request, Response $response, Server $server)
+        $this->server->On(ServerEvents::Start, function(Server $server) : void
         {
-            // в случае какой-то необработанно ошибки, кидаем 500 ошибку,
-            // чтобы клиент не ждал бесконечное количество лет
-            $this->Server_Request($request, $response, $server);
+            $this->Server_Start($server);
+        });
+
+        $this->server->On(ServerEvents::Shutdown, function(Server $server) : void
+        {
+            $this->Server_Stop($server);
+        });
+
+        $this->server->On(ServerEvents::Request, function(Request $request, Response $response, Server $server) : void
+        {
+            $this->serverQueue[] = new ServerQueueTask($server, $request, $response);
+            Console::InterruptRead();
         });
 
         $this->server->On(ServerEvents::Throwable, function(Request $request, Response $response, Throwable $throwable, Server $server) : void
@@ -285,7 +293,24 @@ final class Main
     {
         while (true)
         {
-            $input = Console::ReadLine();
+            try
+            {
+                $input = Console::ReadLine();
+            }
+            catch (ReadInterruptedException $e)
+            {
+                // foreach здесь не делать. Записи в массиве могут появляться асинхронно
+                while (count($this->serverQueue) > 0)
+                {
+                    $queueTask = $this->serverQueue[0];
+                    $this->Server_Request($queueTask->request, $queueTask->response, $queueTask->server);
+                    $this->serverQueue[0] = null;
+                    unset($this->serverQueue[0]);
+                    $this->serverQueue = array_values($this->serverQueue);
+                }
+                continue;
+            }
+
             $this->bot->DispatchPrivateCommand(User::Get(0), $input);
         }
     }
@@ -646,10 +671,6 @@ final class Main
                     }
 
                     $msgid = 0;
-                    if (isset($obj["action"]))
-                    {
-                        break;
-                    }
 
                     if (isset($obj["action"]))
                     {
@@ -700,7 +721,7 @@ final class Main
 
                     try
                     {
-                        $inboxMsg = new Message($msgid, $date, $from, $group, $text, $peer_id, $attachments, $conversation, $geolocation);
+                        $inboxMsg = new Message($peer_id > 2000000000 ? $conversation_message_id : $msgid, $date, $from, $group, $text, $peer_id, $attachments, $conversation, $geolocation);
                     }
                     catch (\Exception $e)
                     {
@@ -941,7 +962,8 @@ final class Main
             "restart_on_ctrl_c" => true,
             "enable_wall_cache" => true,
             "enable_help_command_for_conversations" => true,
-            "show_invalid_command_in_conversations" => true
+            "show_invalid_command_in_conversations" => true,
+            "disable_plugin_on_exception" => true
         );
     }
 }

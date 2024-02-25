@@ -38,6 +38,8 @@ class UserLeftEvent extends Event
     /**
      * Получить пользователя, который покинул беседу
      *
+     * Появилось в API: 1.0
+     *
      * @return User Объект пользователя, покинувший беседу
      */
     public function GetLeft() : User
@@ -47,6 +49,8 @@ class UserLeftEvent extends Event
 
     /**
      * Получить идентификатор беседы
+     *
+     * Появилось в API: 1.0
      *
      * @return Conversation Идентификатор беседы
      */

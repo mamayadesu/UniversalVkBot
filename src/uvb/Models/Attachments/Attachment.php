@@ -60,6 +60,8 @@ class Attachment implements IAttachment
     /**
      * Получить дату публикации вложения
      *
+     * Появилось в API: 1.0
+     *
      * @return int Возвращает дату публикации изображения в формате Unixtime
      */
     final function GetDate() : int
@@ -69,6 +71,8 @@ class Attachment implements IAttachment
 
     /**
      * Получить идентификатор вложения
+     *
+     * Появилось в API: 1.0
      *
      * @return int Индентификатор вложения
      */
@@ -80,6 +84,8 @@ class Attachment implements IAttachment
     /**
      * Получить идентификатор пользователя или сообщества, опубликовавшего вложение
      *
+     * Появилось в API: 1.0
+     *
      * @return int Число меньше нуля - идентификатор сообщества (без знака минус). Число больше нуля - идентификатор пользователя
      */
     final function GetOwnerId() : int
@@ -89,6 +95,8 @@ class Attachment implements IAttachment
 
     /**
      * Получить пользователя или сообщество, опубликовавшего вложение
+     *
+     * Появилось в API: 1.0
      *
      * @return Entity|null Сущность (пользователь или сообщество)
      */
@@ -107,6 +115,8 @@ class Attachment implements IAttachment
     /**
      * Получить ключ доступа. Ключ доступа необходим, например, если вложение было отправлено в личные сообщения, но нужна публичная ссылка на него
      *
+     * Появилось в API: 1.0
+     *
      * @return string Ключ доступа к изображению
      */
     final function GetAccessKey() : string
@@ -117,6 +127,8 @@ class Attachment implements IAttachment
     /**
      * Получить тип вложения
      *
+     * Появилось в API: 1.0
+     *
      * @return string Тип вложения (например, photo, video, doc и т.д.)
      */
     final function GetMediaType() : string
@@ -126,6 +138,9 @@ class Attachment implements IAttachment
 
     /**
      * Получить форматированную "ссылку" на изображение, как это устроено на сайте ВК
+     *
+     * Появилось в API: 1.0
+     *
      * @return string Форматированная ссылка на вложение
      */
     public function GetFormatted() : string

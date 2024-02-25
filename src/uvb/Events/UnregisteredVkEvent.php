@@ -36,6 +36,8 @@ class UnregisteredVkEvent extends Event
     /**
      * Получить исходные данные в виде JSON
      *
+     * Появилось в API: 1.0
+     *
      * @return string Исходные данные в виде JSON
      */
     public function GetRawContent() : string
@@ -46,6 +48,8 @@ class UnregisteredVkEvent extends Event
     /**
      * Получить исходные данные в виде массива
      *
+     * Появилось в API: 1.0
+     *
      * @return array Исходные данные
      */
     public function GetData() : array
@@ -55,6 +59,8 @@ class UnregisteredVkEvent extends Event
 
     /**
      * Получить тип события
+     *
+     * Появилось в API: 1.0
      *
      * @return string Тип события. Например, новое сообщение, пользователь вступил в сообщество, пользователь поставил лайк под постом и т.д.
      */

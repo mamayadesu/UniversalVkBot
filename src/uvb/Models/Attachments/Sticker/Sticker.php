@@ -90,6 +90,8 @@ class Sticker extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Идентификатор набора стикеров
      */
     public function GetProductId() : int
@@ -98,6 +100,8 @@ class Sticker extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * @return int Идентификатор стикера
      */
     public function GetStickerId() : int
@@ -106,6 +110,8 @@ class Sticker extends Attachment
     }
 
     /**
+     * Появилось в API: 1.0
+     *
      * Получить ссылки на файлы стикеров
      *
      * @param bool $withBackground Будут ли возвращены ссылки на изображения с фоном
@@ -125,6 +131,8 @@ class Sticker extends Attachment
 
     /**
      * Получить ссылку на код анимации стикера
+     *
+     * Появилось в API: 1.0
      *
      * @return string Ссылка на код анимации стикера
      */
