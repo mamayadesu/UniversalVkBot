@@ -320,7 +320,7 @@ final class Updater
             }
             $this->sourceUpdateFileData = $result;
             $data = json_decode($result, true);
-            if ($data == null)
+            if ($data === null)
             {
                 cmm::e("system.update.fail.data", []);
                 var_dump($result);
