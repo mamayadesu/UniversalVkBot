@@ -597,18 +597,16 @@ final class Main
         {
             return;
         }
-
+        $response->ClientNonBlockMode = true;
         $response->Header("Content-Type", "text/plain");
         if ($request->RequestUri != "/" . Bot::REQUEST_URI)
         {
-            $response->ClientNonBlockMode = true;
             $response->End("Wrong URI");
             return;
         }
 
         if ($data == null)
         {
-            $response->ClientNonBlockMode = true;
             $response->End("Bad request");
             return;
         }
